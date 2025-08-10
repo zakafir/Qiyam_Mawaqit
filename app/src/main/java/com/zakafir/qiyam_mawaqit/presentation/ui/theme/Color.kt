@@ -1,4 +1,4 @@
-package com.zakafir.qiyam_mawaqit.ui.theme
+package com.zakafir.qiyam_mawaqit.presentation.ui.theme
 
 import androidx.compose.ui.graphics.Color
 

@@ -1,6 +1,5 @@
-package com.zakafir.qiyam_mawaqit.ui.theme
+package com.zakafir.qiyam_mawaqit.presentation.ui.theme
 
-import android.app.Activity
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
