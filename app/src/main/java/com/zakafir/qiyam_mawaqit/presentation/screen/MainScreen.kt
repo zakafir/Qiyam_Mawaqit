@@ -21,7 +21,11 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.zakafir.qiyam_mawaqit.data.PrayerTimesClient
+import com.zakafir.qiyam_mawaqit.domain.PrayerTimesRepository
+import com.zakafir.qiyam_mawaqit.domain.PrayerTimesRepositoryImpl
 import com.zakafir.qiyam_mawaqit.presentation.HistoryScreen
+import com.zakafir.qiyam_mawaqit.presentation.PrayerTimesViewModel
 import com.zakafir.qiyam_mawaqit.presentation.QiyamUiState
 import com.zakafir.qiyam_mawaqit.presentation.Screen
 import com.zakafir.qiyam_mawaqit.presentation.demoState
@@ -47,6 +51,12 @@ fun QiyamApp(
             startDestination = Screen.Home.route,
             modifier = Modifier.padding(padding)
         ) {
+            val viewModel = PrayerTimesViewModel(
+                repo = PrayerTimesRepositoryImpl(
+                    api = PrayerTimesClient()
+                )
+            )
+            viewModel.refresh()
             composable(Screen.Home.route) {
                 HomeScreen(
                     state = state,
