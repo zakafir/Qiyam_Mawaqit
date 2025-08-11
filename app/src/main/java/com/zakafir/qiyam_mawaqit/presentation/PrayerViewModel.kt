@@ -26,7 +26,9 @@ data class PrayerUiState(
     val qiyamWindow: QiyamWindowDTO? = null,
     val qiyamUiState: QiyamUiState? = null,
     val isLoading: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    val streak: Int = 11,
+    val weeklyGoal: Int = 3
 )
 
 data class QiyamUiState(

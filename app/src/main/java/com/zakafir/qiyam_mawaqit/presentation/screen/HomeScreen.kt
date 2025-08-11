@@ -17,6 +17,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.zakafir.qiyam_mawaqit.presentation.PrayerUiState
+import com.zakafir.qiyam_mawaqit.presentation.StreakHeader
 import com.zakafir.qiyam_mawaqit.presentation.component.HelperCard
 import com.zakafir.qiyam_mawaqit.presentation.component.StatChip
 import com.zakafir.qiyam_mawaqit.presentation.component.TonightCard
@@ -37,6 +38,10 @@ fun HomeScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        // Streak
+        item {
+            StreakHeader(streak = vmUiState.streak, weeklyGoal = vmUiState.weeklyGoal)
+        }
         // Section: Today & Tomorrow
         item {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
