@@ -20,6 +20,7 @@ import kotlinx.datetime.toLocalDateTime
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.days
 import kotlinx.datetime.toInstant
+import com.zakafir.qiyam_mawaqit.presentation.screen.NapConfig
 
 data class PrayerUiState(
     val prayers: Prayers? = null,
@@ -28,7 +29,17 @@ data class PrayerUiState(
     val isLoading: Boolean = false,
     val error: String? = null,
     val streak: Int = 11,
-    val weeklyGoal: Int = 3
+    val weeklyGoal: Int = 3,
+    // Advanced Sleep Planner controls (values only)
+    val desiredSleepHours: Float = 7.5f,
+    val postFajrBufferMin: Int = 60,
+    val ishaBufferMin: Int = 30,
+    val minNightStart: String = "21:30",
+    val disallowPostFajrIfFajrAfter: String = "06:30",
+    val naps: List<NapConfig> = emptyList(),
+    val bufferMinutes: Int = 12,
+    val allowPostFajr: Boolean = true,
+    val latestMorningEnd: String = "14:00"
 )
 
 data class QiyamUiState(
@@ -43,6 +54,8 @@ class PrayerTimesViewModel(
 
     private val _uiState = MutableStateFlow(PrayerUiState())
     val uiState: StateFlow<PrayerUiState> = _uiState.asStateFlow()
+
+    // No init block needed for lambda callbacks
 
     fun refresh(context: Context) {
         viewModelScope.launch {
@@ -73,7 +86,7 @@ class PrayerTimesViewModel(
             } catch (t: Throwable) {
                 null
             }
-            val qiyamUiState = qiyamDto?.let { convertToQiyamUi(it, bufferMinutes = 12) }
+            val qiyamUiState = qiyamDto?.let { convertToQiyamUi(it, bufferMinutes = _uiState.value.bufferMinutes) }
             newState = newState.copy(qiyamWindow = qiyamDto, qiyamUiState = qiyamUiState)
 
             // stop loading
@@ -130,5 +143,75 @@ class PrayerTimesViewModel(
         val hour = parts.getOrNull(0)?.toIntOrNull() ?: 0
         val minute = parts.getOrNull(1)?.toIntOrNull() ?: 0
         return hour to minute
+    }
+
+    fun updateBuffer(v: Int) {
+        _uiState.update { it.copy(bufferMinutes = v.coerceIn(0, 120)) }
+        recomputeQiyamUiFromState()
+    }
+
+    private fun recomputeQiyamUiFromState() {
+        val current = _uiState.value
+        val updated = current.copy(
+            qiyamUiState = current.qiyamWindow?.let { convertToQiyamUi(it, bufferMinutes = current.bufferMinutes) }
+        )
+        _uiState.value = updated
+    }
+
+    fun updateDesiredSleepHours(v: Float) {
+        _uiState.update { it.copy(desiredSleepHours = v.coerceIn(4f, 12f)) }
+    }
+
+    fun updatePostFajrBuffer(v: Int) {
+        _uiState.update { it.copy(postFajrBufferMin = v.coerceIn(0, 120)) }
+    }
+
+    fun updateIshaBuffer(v: Int) {
+        _uiState.update { it.copy(ishaBufferMin = v.coerceIn(0, 120)) }
+    }
+
+    fun updateWeeklyGoal(v: Int) {
+        _uiState.update { it.copy(weeklyGoal = v.coerceIn(0, 7)) }
+    }
+
+    fun updateMinNightStart(v: String) {
+        _uiState.update { it.copy(minNightStart = v) }
+    }
+
+    fun updatePostFajrCutoff(v: String) {
+        _uiState.update { it.copy(disallowPostFajrIfFajrAfter = v) }
+    }
+
+    fun updateNap(index: Int, config: NapConfig) {
+        _uiState.update { s ->
+            val list = s.naps.toMutableList()
+            if (index in list.indices) list[index] = config
+            s.copy(naps = list)
+        }
+    }
+
+    fun addNap() {
+        _uiState.update { s ->
+            val current = s.naps
+            val nextIndex = current.size + 1
+            val defaultStart = when (nextIndex) {
+                1 -> "12:00"
+                2 -> "16:00"
+                3 -> "18:00"
+                else -> "16:00"
+            }
+            val updated = (current + NapConfig(start = defaultStart, durationMin = 0)).take(3)
+            s.copy(naps = updated)
+        }
+    }
+
+    fun removeNap(index: Int) {
+        _uiState.update { s ->
+            val list = s.naps.toMutableList()
+            if (index in list.indices) {
+                list.removeAt(index)
+            }
+            s.copy(naps = list)
+        }
     }
 }

@@ -34,6 +34,7 @@ import com.zakafir.qiyam_mawaqit.presentation.PrayerTimesViewModel
 import com.zakafir.qiyam_mawaqit.presentation.QiyamLog
 import com.zakafir.qiyam_mawaqit.presentation.QiyamUiState
 import com.zakafir.qiyam_mawaqit.presentation.demoState
+import com.zakafir.qiyam_mawaqit.presentation.screen.NapConfig
 
 
 @Composable
@@ -93,11 +94,23 @@ fun QiyamApp(
                 )
             }
             composable(Screen.Settings.route) {
+                val vmState = viewModel.uiState.collectAsState().value
+
                 SettingsScreen(
-                    bufferMinutes = 12,
-                    weeklyGoal = 3,
-                    onBufferChange = onUpdateBuffer,
-                    onGoalChange = onUpdateWeeklyGoal
+                    onBufferChange = { viewModel.updateBuffer(it) },
+                    onGoalChange = { viewModel.updateWeeklyGoal(it) },
+
+                    ui = vmState, // if you refactored SettingsScreen to take the PrayerUiState
+
+                    onDesiredSleepHoursChange = { viewModel.updateDesiredSleepHours(it) },
+                    onPostFajrBufferMinChange = { viewModel.updatePostFajrBuffer(it) },
+                    onIshaBufferMinChange = { viewModel.updateIshaBuffer(it) },
+                    onMinNightStartChange = { viewModel.updateMinNightStart(it) },
+                    onDisallowPostFajrIfFajrAfterChange = { viewModel.updatePostFajrCutoff(it) },
+
+                    onUpdateNap = { index, config -> viewModel.updateNap(index, config) },
+                    onAddNap = { viewModel.addNap() },
+                    onRemoveNap = { index -> viewModel.removeNap(index) }
                 )
             }
         }
