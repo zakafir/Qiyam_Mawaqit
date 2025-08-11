@@ -1,5 +1,7 @@
 package com.zakafir.qiyam_mawaqit.presentation.screen
 
+import androidx.compose.foundation.gestures.scrollable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -9,6 +11,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.FilledTonalButton
@@ -80,8 +84,16 @@ fun HomeScreen(
                     }
                 } ?: run {
                     when {
-                        vmUiState.isLoading -> Text(text = "Loading...", modifier = Modifier.fillMaxSize())
-                        vmUiState.error != null -> Text(text = vmUiState.error, modifier = Modifier.fillMaxSize())
+                        vmUiState.isLoading -> Text(
+                            text = "Loading...",
+                            modifier = Modifier.fillMaxSize()
+                        )
+
+                        vmUiState.error != null -> Text(
+                            text = vmUiState.error,
+                            modifier = Modifier.fillMaxSize()
+                        )
+
                         else -> Text(text = "No data", modifier = Modifier.fillMaxSize())
                     }
                 }
@@ -96,20 +108,6 @@ fun HomeScreen(
                     onSchedule = onSchedule,
                     onTestAlarmUi = onTestAlarmUi
                 )
-            }
-        }
-
-        // Actions row
-        item {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                FilledTonalButton(modifier = Modifier.weight(1f), onClick = onOpenHistory) {
-                    Icon(Icons.Outlined.Build, contentDescription = null)
-                    Text("  History")
-                }
-                OutlinedButton(modifier = Modifier.weight(1f), onClick = onOpenSettings) {
-                    Icon(Icons.Outlined.Settings, contentDescription = null)
-                    Text("  Settings")
-                }
             }
         }
 
@@ -139,39 +137,17 @@ private fun PrayerRowCard(
 ) {
     ElevatedCard(elevation = CardDefaults.elevatedCardElevation(defaultElevation = 4.dp)) {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
                 StatChip("Fajr", fajr, isHighlighted = highlight.contains("Fajr"))
                 StatChip("Dhuhr", dhuhr)
                 StatChip("Asr", asr)
                 StatChip("Maghrib", maghrib, isHighlighted = highlight.contains("Maghrib"))
                 StatChip("Isha", isha)
-            }
-        }
-    }
-}
-
-@Composable
-private fun QiyamCard(
-    start: String,
-    end: String,
-    onSchedule: () -> Unit,
-) {
-    ElevatedCard(elevation = CardDefaults.elevatedCardElevation(defaultElevation = 6.dp)) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text("Tonight’s Qiyam",)
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                StatChip("Qiyam start", start)
-                StatChip("Qiyam end", end)
-            }
-            Divider()
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                FilledTonalButton(modifier = Modifier.weight(1f), onClick = onSchedule) {
-                    Icon(Icons.Outlined.Phone, contentDescription = null)
-                    Text("  Schedule wake-up")
-                }
-                OutlinedButton(modifier = Modifier.weight(1f), onClick = onSchedule) {
-                    Text("Preview alarm")
-                }
             }
         }
     }

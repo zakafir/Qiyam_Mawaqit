@@ -31,7 +31,11 @@ fun StatChip(title: String, value: String, isHighlighted: Boolean = false) {
                 style = MaterialTheme.typography.labelMedium,
                 color = if (isHighlighted) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
             )
-            Text(value, fontWeight = FontWeight.SemiBold)
+            Text(
+                value,
+                fontWeight = FontWeight.SemiBold,
+                color = if (isHighlighted) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+            )
         }
     }
 }
