@@ -12,25 +12,23 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.zakafir.qiyam_mawaqit.presentation.PrayerUiState
 import com.zakafir.qiyam_mawaqit.presentation.QiyamUiState
 import com.zakafir.qiyam_mawaqit.presentation.StreakHeader
-import com.zakafir.qiyam_mawaqit.presentation.TonightCard
 import com.zakafir.qiyam_mawaqit.presentation.component.HelperCard
-import kotlinx.datetime.Clock
+import com.zakafir.qiyam_mawaqit.presentation.component.StatChip
+import com.zakafir.qiyam_mawaqit.presentation.component.TonightCard
 import kotlinx.datetime.LocalDateTime
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
 
 @Composable
 fun HomeScreen(
-    state: QiyamUiState,
+    vmUiState: PrayerUiState,
+    qiyamUiState: QiyamUiState,
     onSchedule: (LocalDateTime) -> Unit,
     onTestAlarmUi: () -> Unit,
     onOpenHistory: () -> Unit,
-    onOpenSettings: () -> Unit
+    onOpenSettings: () -> Unit,
 ) {
-    val zonedNow = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
-    val todayLabel = state.today.toString()
 
     LazyColumn(
         modifier = Modifier
@@ -39,11 +37,48 @@ fun HomeScreen(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         item {
-            StreakHeader(streak = state.streakDays, weeklyGoal = state.weeklyGoal)
+            when {
+                vmUiState.isLoading -> {
+                    Text(text = "Loading...", modifier = Modifier.fillMaxSize())
+                }
+                vmUiState.error != null -> {
+                    Text(text = vmUiState.error, modifier = Modifier.fillMaxSize())
+                }
+                vmUiState.prayers != null -> {
+                    vmUiState.prayers.prayerTimes.forEach { prayerTimes ->
+                        Row {
+                            StatChip("Fajr", prayerTimes.fajr)
+                            StatChip("Dhuhr", prayerTimes.dohr)
+                            StatChip("Asr", prayerTimes.asr)
+                            StatChip("Maghrib", prayerTimes.maghreb)
+                            StatChip("Isha", prayerTimes.icha)
+                        }
+                    }
+                }
+                else -> {
+                    Text(text = "No data", modifier = Modifier.fillMaxSize())
+                }
+            }
+        }
+        item {
+            vmUiState.qiyamWindow?.let { qiyam ->
+                Row {
+                    StatChip("Last third start", qiyam.start)
+                    StatChip("Last third end", qiyam.end)
+                }
+            } ?: run {
+                Text(
+                    text = if (vmUiState.isLoading) "Loading..." else "",
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+        }
+        item {
+            StreakHeader(streak = qiyamUiState.streakDays, weeklyGoal = qiyamUiState.weeklyGoal)
         }
         item {
             TonightCard(
-                window = state.window,
+                window = qiyamUiState.window,
                 onSchedule = onSchedule,
                 onTestAlarmUi = onTestAlarmUi
             )
@@ -59,8 +94,10 @@ fun HomeScreen(
             }
         }
         item {
-            HelperCard(title = "What is the last third?", body =
-                "It's the final third of the night between Maghrib and Fajr. Your wake time sits near the center, minus a small buffer for wuḍūʾ.")
+            HelperCard(
+                title = "What is the last third?", body =
+                    "It's the final third of the night between Maghrib and Fajr. Your wake time sits near the center, minus a small buffer for wuḍūʾ."
+            )
         }
     }
 }

@@ -11,3 +11,8 @@ data class PrayerTimes(
     val maghreb: String,
     val icha: String
 )
+
+@Serializable
+data class Prayers(
+    val prayerTimes: List<PrayerTimes>
+)
