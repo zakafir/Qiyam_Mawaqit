@@ -13,17 +13,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.zakafir.qiyam_mawaqit.presentation.PrayerUiState
-import com.zakafir.qiyam_mawaqit.presentation.QiyamUiState
-import com.zakafir.qiyam_mawaqit.presentation.StreakHeader
 import com.zakafir.qiyam_mawaqit.presentation.component.HelperCard
 import com.zakafir.qiyam_mawaqit.presentation.component.StatChip
-import com.zakafir.qiyam_mawaqit.presentation.component.TonightCard
+import com.zakafir.qiyam_mawaqit.presentation.timeOnly
 import kotlinx.datetime.LocalDateTime
 
 @Composable
 fun HomeScreen(
     vmUiState: PrayerUiState,
-    qiyamUiState: QiyamUiState,
     onSchedule: (LocalDateTime) -> Unit,
     onTestAlarmUi: () -> Unit,
     onOpenHistory: () -> Unit,
@@ -41,9 +38,11 @@ fun HomeScreen(
                 vmUiState.isLoading -> {
                     Text(text = "Loading...", modifier = Modifier.fillMaxSize())
                 }
+
                 vmUiState.error != null -> {
                     Text(text = vmUiState.error, modifier = Modifier.fillMaxSize())
                 }
+
                 vmUiState.prayers != null -> {
                     vmUiState.prayers.prayerTimes.forEach { prayerTimes ->
                         Row {
@@ -55,33 +54,34 @@ fun HomeScreen(
                         }
                     }
                 }
+
                 else -> {
                     Text(text = "No data", modifier = Modifier.fillMaxSize())
                 }
             }
         }
         item {
-            vmUiState.qiyamWindow?.let { qiyam ->
-                Row {
-                    StatChip("Last third start", qiyam.start)
-                    StatChip("Last third end", qiyam.end)
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                vmUiState.qiyamUiState?.let { qiyamUiState ->
+                    StatChip("Qiyam start", timeOnly(qiyamUiState.start))
+                    StatChip("Qiyam end", timeOnly(qiyamUiState.end))
                 }
-            } ?: run {
-                Text(
-                    text = if (vmUiState.isLoading) "Loading..." else "",
-                    modifier = Modifier.fillMaxSize()
-                )
             }
         }
         item {
-            StreakHeader(streak = qiyamUiState.streakDays, weeklyGoal = qiyamUiState.weeklyGoal)
-        }
-        item {
-            TonightCard(
-                window = qiyamUiState.window,
-                onSchedule = onSchedule,
-                onTestAlarmUi = onTestAlarmUi
-            )
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                vmUiState.qiyamUiState?.let { qiyamUiState ->
+                    FilledTonalButton(
+                        modifier = Modifier.weight(1f),
+                        onClick = { onSchedule(qiyamUiState.suggestedWake) }) {
+                        Text("Schedule wake-up")
+                    }
+                }
+
+                OutlinedButton(modifier = Modifier.weight(1f), onClick = onTestAlarmUi) {
+                    Text("Test alarm UI")
+                }
+            }
         }
         item {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {

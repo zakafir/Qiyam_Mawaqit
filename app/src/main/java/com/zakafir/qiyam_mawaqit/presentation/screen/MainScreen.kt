@@ -1,5 +1,8 @@
 package com.zakafir.qiyam_mawaqit.presentation.screen
 
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalDateTime
+
 import com.zakafir.qiyam_mawaqit.presentation.navigation.Screen
 import com.zakafir.qiyam_mawaqit.presentation.screen.HistoryScreen
 import androidx.compose.foundation.layout.padding
@@ -28,15 +31,13 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.zakafir.qiyam_mawaqit.domain.PrayerTimesRepositoryImpl
 import com.zakafir.qiyam_mawaqit.presentation.PrayerTimesViewModel
+import com.zakafir.qiyam_mawaqit.presentation.QiyamLog
 import com.zakafir.qiyam_mawaqit.presentation.QiyamUiState
 import com.zakafir.qiyam_mawaqit.presentation.demoState
-import kotlinx.datetime.LocalDate
-import kotlinx.datetime.LocalDateTime
 
 
 @Composable
 fun QiyamApp(
-    qiyamUiState: QiyamUiState,
     onScheduleTonight: (LocalDateTime) -> Unit = {},
     onMarkWoke: (LocalDate) -> Unit = {},
     onMarkPrayed: (LocalDate) -> Unit = {},
@@ -65,7 +66,6 @@ fun QiyamApp(
                 val vmState = viewModel.uiState.collectAsState().value
                 HomeScreen(
                     vmUiState = vmState,
-                    qiyamUiState = qiyamUiState,
                     onSchedule = { onScheduleTonight(it) },
                     onTestAlarmUi = { nav.navigate(Screen.Wake.route) },
                     onOpenHistory = { nav.navigate(Screen.History.route) },
@@ -73,20 +73,29 @@ fun QiyamApp(
                 )
             }
             composable(Screen.Wake.route) {
+                val vmState = viewModel.uiState.collectAsState().value
+                val fallbackTime = LocalDateTime(2025, 1, 1, 3, 30)
+                val fallbackDate = LocalDate(2025, 1, 1)
                 WakeScreen(
-                    time = qiyamUiState.window.suggestedWake,
-                    onImUp = { onMarkWoke(qiyamUiState.today); nav.popBackStack() },
-                    onMarkPrayed = { onMarkPrayed(qiyamUiState.today); nav.popBackStack() },
+                    time = vmState.qiyamUiState?.suggestedWake ?: fallbackTime,
+                    onImUp = { onMarkWoke(fallbackDate); nav.popBackStack() },
+                    onMarkPrayed = { onMarkPrayed(fallbackDate); nav.popBackStack() },
                     onSnooze = { /* no-op in UI-only demo */ }
                 )
             }
             composable(Screen.History.route) {
-                HistoryScreen(qiyamUiState.history)
+                val vmState = viewModel.uiState.collectAsState().value
+                HistoryScreen(
+                    listOf(
+                        QiyamLog(date = LocalDate(2025, 1, 1), prayed = true, woke = true),
+                        QiyamLog(date = LocalDate(2025, 1, 2), prayed = false, woke = true),
+                    )
+                )
             }
             composable(Screen.Settings.route) {
                 SettingsScreen(
-                    bufferMinutes = qiyamUiState.bufferMinutes,
-                    weeklyGoal = qiyamUiState.weeklyGoal,
+                    bufferMinutes = 12,
+                    weeklyGoal = 3,
                     onBufferChange = onUpdateBuffer,
                     onGoalChange = onUpdateWeeklyGoal
                 )
@@ -130,6 +139,6 @@ private fun currentRoute(nav: NavHostController): String? {
 @Composable
 private fun PreviewHome() {
     MaterialTheme(colorScheme = lightColorScheme()) {
-        QiyamApp(demoState())
+        QiyamApp()
     }
 }

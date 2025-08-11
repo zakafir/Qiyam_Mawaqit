@@ -13,7 +13,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             Qiyam_MawaqitTheme {
-                QiyamApp(demoState())
+                QiyamApp()
             }
         }
     }

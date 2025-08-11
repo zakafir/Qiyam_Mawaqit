@@ -64,7 +64,7 @@ fun WakeScreen(
 private fun PreviewWake() {
     MaterialTheme(colorScheme = darkColorScheme()) {
         WakeScreen(
-            time = demoState().window.suggestedWake,
+            time = LocalDateTime(2025, 1, 1, 3, 30),
             onImUp = {},
             onMarkPrayed = {},
             onSnooze = {}
