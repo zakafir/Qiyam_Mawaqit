@@ -4,6 +4,7 @@ import android.content.Context
 import com.zakafir.qiyam_mawaqit.data.model.PrayerTimes
 import com.zakafir.qiyam_mawaqit.data.model.Prayers
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.decodeFromString
 import java.util.Calendar
 
 data class QiyamWindowDTO(val start: String, val end: String)
@@ -11,7 +12,7 @@ data class QiyamWindowDTO(val start: String, val end: String)
 interface PrayerTimesRepository {
     /** Returns only today's prayers wrapped into Prayers(Result). */
     suspend fun getPrayersTime(context: Context): Result<Prayers>
-    /** Computes last third of night using yesterday Isha and today Fajr. */
+    /** Computes last third of *tonight* using today's Isha and tomorrow's Fajr. */
     fun computeQiyamWindow(context: Context): QiyamWindowDTO
 }
 
@@ -21,28 +22,32 @@ class PrayerTimesRepositoryImpl() : PrayerTimesRepository {
 
     override suspend fun getPrayersTime(context: Context): Result<Prayers> = runCatching {
         val todayCal = Calendar.getInstance()
-        val todayPrayer = getPrayerTimesFor(context, todayCal)
-        Prayers(listOf(todayPrayer))
+        val tomorrowCal = (todayCal.clone() as Calendar).apply { add(Calendar.DAY_OF_MONTH, 1) }
+
+        val today = getPrayerTimesFor(context, todayCal)
+        val tomorrow = getPrayerTimesFor(context, tomorrowCal)
+
+        Prayers(listOf(today, tomorrow))
     }
 
     override fun computeQiyamWindow(context: Context): QiyamWindowDTO {
-        // 1) Load yesterday and today prayers
+        // 1) Load today and tomorrow prayers (tonight's window)
         val todayCal = Calendar.getInstance()
-        val yesterdayCal = (todayCal.clone() as Calendar).apply { add(Calendar.DAY_OF_MONTH, -1) }
+        val tomorrowCal = (todayCal.clone() as Calendar).apply { add(Calendar.DAY_OF_MONTH, 1) }
 
-        val yesterday = getPrayerTimesFor(context, yesterdayCal)
         val today = getPrayerTimesFor(context, todayCal)
+        val tomorrow = getPrayerTimesFor(context, tomorrowCal)
 
-        val startCal = (yesterdayCal.clone() as Calendar).apply {
-            val (hIsha, mIsha) = parseHourMinute(yesterday.icha)
+        val startCal = (todayCal.clone() as Calendar).apply {
+            val (hIsha, mIsha) = parseHourMinute(today.icha)
             set(Calendar.HOUR_OF_DAY, hIsha)
             set(Calendar.MINUTE, mIsha)
             set(Calendar.SECOND, 0)
             set(Calendar.MILLISECOND, 0)
         }
 
-        val endCal = (todayCal.clone() as Calendar).apply {
-            val (hFajr, mFajr) = parseHourMinute(today.fajr)
+        val endCal = (tomorrowCal.clone() as Calendar).apply {
+            val (hFajr, mFajr) = parseHourMinute(tomorrow.fajr)
             set(Calendar.HOUR_OF_DAY, hFajr)
             set(Calendar.MINUTE, mFajr)
             set(Calendar.SECOND, 0)
@@ -58,8 +63,8 @@ class PrayerTimesRepositoryImpl() : PrayerTimesRepository {
         val duration = fixedEnd - start
         val lastThirdStart = start + (duration * 2) / 3
 
-        val lastThirdCal = (yesterdayCal.clone() as Calendar).apply { timeInMillis = lastThirdStart }
-        val endCalFixed = (todayCal.clone() as Calendar).apply { timeInMillis = fixedEnd }
+        val lastThirdCal = (todayCal.clone() as Calendar).apply { timeInMillis = lastThirdStart }
+        val endCalFixed = (tomorrowCal.clone() as Calendar).apply { timeInMillis = fixedEnd }
 
         return QiyamWindowDTO(
             start = formatHHmm(lastThirdCal),

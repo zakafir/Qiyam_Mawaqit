@@ -18,6 +18,7 @@ import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.days
 import kotlinx.datetime.toInstant
 
 data class PrayerUiState(
@@ -94,7 +95,8 @@ class PrayerTimesViewModel(
         )
 
         val (endHour, endMinute) = parseHourMinute(qiyam.end)
-        val endDateTime = LocalDateTime(
+        // Build endCandidate on the same day
+        var endCandidate = LocalDateTime(
             year = today.year,
             monthNumber = today.monthNumber,
             dayOfMonth = today.dayOfMonth,
@@ -103,8 +105,14 @@ class PrayerTimesViewModel(
             second = 0,
             nanosecond = 0
         )
-
         val tz = TimeZone.currentSystemDefault()
+        val startInstant = startDateTime.toInstant(tz)
+        var endInstant = endCandidate.toInstant(tz)
+        if (endInstant <= startInstant) {
+            endInstant = endInstant.plus(1.days)
+        }
+        val endDateTime = endInstant.toLocalDateTime(tz)
+
         val suggestedWake =
             startDateTime.toInstant(tz).minus(bufferMinutes.minutes).toLocalDateTime(tz)
 

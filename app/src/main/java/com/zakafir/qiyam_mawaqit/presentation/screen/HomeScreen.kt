@@ -9,6 +9,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.SuggestionChip
+import androidx.compose.material3.SuggestionChipDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -44,13 +46,35 @@ fun HomeScreen(
                 }
 
                 vmUiState.prayers != null -> {
-                    vmUiState.prayers.prayerTimes.forEach { prayerTimes ->
+                    val prayersList = vmUiState.prayers.prayerTimes
+                    val today = prayersList.getOrNull(0)
+                    val tomorrow = prayersList.getOrNull(1)
+                    if (today != null) {
+                        Text(
+                            text = "Today's prayers",
+                            modifier = Modifier.padding(bottom = 4.dp)
+                        )
                         Row {
-                            StatChip("Fajr", prayerTimes.fajr)
-                            StatChip("Dhuhr", prayerTimes.dohr)
-                            StatChip("Asr", prayerTimes.asr)
-                            StatChip("Maghrib", prayerTimes.maghreb)
-                            StatChip("Isha", prayerTimes.icha)
+                            StatChip("Fajr", today.fajr)
+                            StatChip("Dhuhr", today.dohr)
+                            StatChip("Asr", today.asr)
+                            // Highlight Maghrib (today)
+                            StatChip("Maghrib", value = today.maghreb, isHighlighted = true)
+                            StatChip("Isha", today.icha)
+                        }
+                    }
+                    if (tomorrow != null) {
+                        Text(
+                            text = "Tomorrow's prayers",
+                            modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
+                        )
+                        Row {
+                            // Highlight Fajr (tomorrow)
+                            StatChip("Fajr", value = tomorrow.fajr, isHighlighted = true)
+                            StatChip("Dhuhr", tomorrow.dohr)
+                            StatChip("Asr", tomorrow.asr)
+                            StatChip("Maghrib", tomorrow.maghreb)
+                            StatChip("Isha", tomorrow.icha)
                         }
                     }
                 }
