@@ -4,8 +4,8 @@ import android.content.Context
 import com.zakafir.qiyam_mawaqit.data.model.PrayerTimes
 import com.zakafir.qiyam_mawaqit.data.model.Prayers
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.decodeFromString
 import java.util.Calendar
+import java.util.Locale
 
 data class QiyamWindowDTO(val start: String, val end: String)
 
@@ -87,7 +87,12 @@ class PrayerTimesRepositoryImpl() : PrayerTimesRepository {
             parsed
         }
         val index = (dayOfMonth - 1).coerceIn(0, monthItems.lastIndex)
-        return monthItems[index]
+        val year = calendar.get(Calendar.YEAR)
+        val month = calendar.get(Calendar.MONTH) + 1
+        val day = calendar.get(Calendar.DAY_OF_MONTH)
+        val dateStr = String.format(Locale.FRANCE, "%04d-%02d-%02d", year, month, day)
+        val item = monthItems[index]
+        return item.copy(date = dateStr)
     }
 
     private fun parseHourMinute(hhmm: String): Pair<Int, Int> {

@@ -4,6 +4,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class PrayerTimes(
+    val date: String? = null,
     val fajr: String,
     val sunset: String,
     val dohr: String,

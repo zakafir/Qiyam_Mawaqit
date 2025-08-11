@@ -1,6 +1,5 @@
 package com.zakafir.qiyam_mawaqit.presentation.screen
 
-import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -8,25 +7,12 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
-import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.Divider
-import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.SuggestionChip
-import androidx.compose.material3.SuggestionChipDefaults
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Build
-import androidx.compose.material.icons.outlined.Phone
-import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -34,7 +20,6 @@ import com.zakafir.qiyam_mawaqit.presentation.PrayerUiState
 import com.zakafir.qiyam_mawaqit.presentation.component.HelperCard
 import com.zakafir.qiyam_mawaqit.presentation.component.StatChip
 import com.zakafir.qiyam_mawaqit.presentation.component.TonightCard
-import com.zakafir.qiyam_mawaqit.presentation.timeOnly
 import kotlinx.datetime.LocalDateTime
 
 @Composable
@@ -62,6 +47,12 @@ fun HomeScreen(
 
                     today?.let {
                         SectionTitle("Today's prayers")
+                        Text(
+                            text = today.date ?: "",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(bottom = 4.dp)
+                        )
                         PrayerRowCard(
                             fajr = it.fajr,
                             dhuhr = it.dohr,
@@ -73,6 +64,12 @@ fun HomeScreen(
                     }
                     tomorrow?.let {
                         SectionTitle("Tomorrow's prayers")
+                        Text(
+                            text = tomorrow.date.toString(),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(bottom = 4.dp)
+                        )
                         PrayerRowCard(
                             fajr = it.fajr,
                             dhuhr = it.dohr,
@@ -103,11 +100,16 @@ fun HomeScreen(
         // Section: Qiyam (Tonight)
         item {
             vmUiState.qiyamWindow?.let { qiyam ->
-                TonightCard(
-                    window = qiyam,
-                    onSchedule = onSchedule,
-                    onTestAlarmUi = onTestAlarmUi
-                )
+                vmUiState.prayers?.let { prayers ->
+                    val list = prayers.prayerTimes
+                    val today = list.getOrNull(0)
+                    TonightCard(
+                        date = today?.date ?: "",
+                        window = qiyam,
+                        onSchedule = onSchedule,
+                        onTestAlarmUi = onTestAlarmUi
+                    )
+                }
             }
         }
 
