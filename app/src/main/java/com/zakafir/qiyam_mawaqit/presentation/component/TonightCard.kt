@@ -16,15 +16,15 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.zakafir.qiyam_mawaqit.presentation.QiyamWindow
-import com.zakafir.qiyam_mawaqit.presentation.timeOnly
+import com.zakafir.qiyam_mawaqit.domain.QiyamWindowDTO
 import com.zakafir.qiyam_mawaqit.presentation.timeRange
 import kotlinx.datetime.LocalDateTime
 
 @Composable
 fun TonightCard(
-    window: QiyamWindow,
+    window: QiyamWindowDTO,
     onSchedule: (LocalDateTime) -> Unit,
     onTestAlarmUi: () -> Unit
 ) {
@@ -33,17 +33,35 @@ fun TonightCard(
         shape = RoundedCornerShape(20.dp)
     ) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text("Tonight", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+            Text(
+                "Tonight",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
             Spacer(Modifier.height(4.dp))
+
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                StatChip("Last third", timeRange(window.start, window.end))
-                StatChip("Suggested", timeOnly(window.suggestedWake))
+                StatChip("Qiyam start", window.start)
+                StatChip("Qiyam end", window.end)
             }
             Spacer(Modifier.height(4.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Button(onClick = { onSchedule(window.suggestedWake) }) { Text("Schedule") }
+                // Button(onClick = { onSchedule(window.suggestedWake) }) { Text("Schedule") }
                 OutlinedButton(onClick = onTestAlarmUi) { Text("Test alarm UI") }
             }
         }
     }
+}
+
+@Preview
+@Composable
+fun TonightCardPreview() {
+    TonightCard(
+        onSchedule = {},
+        onTestAlarmUi = {},
+        window = QiyamWindowDTO(
+            start = "00:00",
+            end = "00:00"
+        ),
+    )
 }

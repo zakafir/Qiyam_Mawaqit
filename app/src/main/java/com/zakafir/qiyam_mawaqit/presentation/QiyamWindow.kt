@@ -13,12 +13,6 @@ import androidx.compose.ui.unit.sp
 import kotlinx.datetime.*
 import kotlinx.serialization.Serializable
 
-// ---------- Models (UI-only, platform-agnostic) ----------
-
-data class QiyamWindow(
-    val start: LocalDateTime, val end: LocalDateTime, val suggestedWake: LocalDateTime
-)
-
 @Serializable
 data class QiyamLog(
     val date: LocalDate,

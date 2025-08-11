@@ -18,9 +18,6 @@ import androidx.compose.ui.unit.dp
 fun StatChip(title: String, value: String, isHighlighted: Boolean = false) {
     Surface(
         tonalElevation = 2.dp, modifier = Modifier
-            .background(
-                if (isHighlighted) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.surface
-            )
             .clip(
                 RoundedCornerShape(16.dp)
             )
