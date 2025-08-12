@@ -32,13 +32,16 @@ class PrayerTimesViewModel(
     private val _masjidQuery = MutableStateFlow("")
 
     init {
+        refresh()
         viewModelScope.launch {
             _masjidQuery
                 .debounce(350)
                 .distinctUntilChanged()
                 .collect { q ->
                     if (q.length < 2) {
-                        _uiState.update { PrayerUiState() }
+                        _uiState.update {
+                            it.copy(searchResults = emptyList())
+                        }
                         return@collect
                     }
                     try {
@@ -60,7 +63,7 @@ class PrayerTimesViewModel(
             // start loading & clear previous error
             _uiState.update { it.copy(isLoading = true,) }
 
-            val currentMasjidId = _uiState.value.masjidId
+            val currentMasjidId = _uiState.value.yearlyPrayers?.deducedMasjidId ?: _uiState.value.masjidId
 
             // 1) Load prayers as Result
             val prayersResult = try {
@@ -74,7 +77,7 @@ class PrayerTimesViewModel(
             var newState = _uiState.value
             prayersResult
                 .onSuccess { prayers ->
-                    newState = newState.copy(yearlyPrayers = prayers,)
+                    newState = newState.copy(yearlyPrayers = prayers, masjidId = prayers.deducedMasjidId)
                 }
                 .onFailure { e ->
                     // Null out prayers on failure so UI shows nothing

@@ -17,7 +17,7 @@ class RemoteDataSourceImpl(
     override suspend fun getYearlyPrayersTime(masjidId: String): Result<YearlyPrayers> = runCatching {
         val calendarDto = api.getYearlyCalendar(masjidId)
         val list = mapYearCalendar(calendarDto)
-        PrayersDTO(list).toDomain()
+        PrayersDTO(deducedMasjidId = masjidId, prayerTimesDTO = list).toDomain()
     }
 
     override suspend fun searchMosques(word: String): List<Pair<String?, String?>> {

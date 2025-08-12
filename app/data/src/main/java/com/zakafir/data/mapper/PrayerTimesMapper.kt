@@ -26,15 +26,8 @@ fun PrayerTimesDTO.toDomain(): PrayerTimes =
  */
 fun PrayersDTO.toDomain(): YearlyPrayers =
     YearlyPrayers(
+        deducedMasjidId = this.deducedMasjidId,
         prayerTimes = this.prayerTimesDTO.map { it.toDomain() }
-    )
-
-/**
- * If your API returns a bare list (no wrapper), you can map it with this helper.
- */
-fun List<PrayerTimesDTO>.toDomain(): YearlyPrayers =
-    YearlyPrayers(
-        prayerTimes = this.map { it.toDomain() }
     )
 
 // ---------------------------
@@ -53,6 +46,7 @@ fun PrayerTimes.toData(): PrayerTimesDTO =
 
 fun YearlyPrayers.toData(): PrayersDTO =
     PrayersDTO(
+        deducedMasjidId = this.deducedMasjidId,
         prayerTimesDTO = this.prayerTimes.map { it.toData() }
     )
 

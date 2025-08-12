@@ -15,6 +15,7 @@ data class PrayerTimesDTO(
 
 @Serializable
 data class PrayersDTO(
+    val deducedMasjidId: String,
     val prayerTimesDTO: List<PrayerTimesDTO>
 )
 

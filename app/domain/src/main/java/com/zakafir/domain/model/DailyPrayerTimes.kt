@@ -11,6 +11,7 @@ data class PrayerTimes(
 )
 
 data class YearlyPrayers(
+    val deducedMasjidId: String,
     val prayerTimes: List<PrayerTimes>
 )
 

@@ -2,6 +2,8 @@ package com.zakafir.data.local
 
 import android.content.Context
 import com.zakafir.data.mapper.toData
+import com.zakafir.data.mapper.toDomain
+import com.zakafir.data.model.PrayersDTO
 import com.zakafir.domain.LocalDataSource
 import com.zakafir.domain.model.YearlyPrayers
 import java.io.File
@@ -12,21 +14,21 @@ import kotlinx.serialization.decodeFromString
 class LocalDataSourceImpl(
     private val context: Context,
 ): LocalDataSource {
-
     private val json = Json { prettyPrint = true; ignoreUnknownKeys = true }
-
-    override suspend fun getLocalPrayersTime(masjidId: String): Result<YearlyPrayers> {
-        val data = readYearlyPrayers(masjidId)
-        return if (data != null) Result.success(data)
-        else Result.failure(NoSuchFileException(File(context.filesDir, "$masjidId.json")))
-    }
 
     override fun readYearlyPrayers(masjidId: String): YearlyPrayers? {
         val file = File(context.filesDir, "$masjidId.json")
-        if (!file.exists() || file.length() == 0L) return null
+        val targetFile = if (!file.exists() || file.length() == 0L) {
+            // Get the most recently modified .json file in the files directory
+            context.filesDir.listFiles { f -> f.extension == "json" }
+                ?.filter { it.length() > 0 }
+                ?.maxByOrNull { it.lastModified() }
+        } else file
+
+        if (targetFile == null || targetFile.length() == 0L) return null
         return runCatching {
-            val text = file.readText()
-            json.decodeFromString<YearlyPrayers>(text)
+            val text = targetFile.readText()
+            json.decodeFromString<PrayersDTO>(text).toDomain()
         }.getOrNull()
     }
 
