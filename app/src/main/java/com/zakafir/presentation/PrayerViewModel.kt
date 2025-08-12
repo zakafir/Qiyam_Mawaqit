@@ -2,6 +2,7 @@ package com.zakafir.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.zakafir.domain.DataSource
 import com.zakafir.domain.PrayerTimesRepository
 import com.zakafir.domain.model.Prayers
 import com.zakafir.domain.model.QiyamWindow
@@ -41,6 +42,7 @@ data class PrayerUiState(
     val bufferMinutes: Int = 12,
     val allowPostFajr: Boolean = true,
     val latestMorningEnd: String = "07:30",
+    val dataSourceLabel: String? = null,
 )
 
 data class QiyamUiState(
@@ -67,10 +69,10 @@ class PrayerTimesViewModel(
 
             if (localId.isNullOrBlank()) {
                 // No local file: ensure empty masjidId in UI
-                _uiState.update { it.copy(masjidId = "") }
+                _uiState.update { it.copy() }
             } else {
                 // Found a local cached file -> set masjidId and load its data
-                _uiState.update { it.copy(masjidId = localId) }
+                _uiState.update { it.copy(masjidId = localId,) }
                 refresh()
             }
         }
@@ -79,7 +81,7 @@ class PrayerTimesViewModel(
     fun refresh() {
         viewModelScope.launch {
             // start loading & clear previous error
-            _uiState.update { it.copy(isLoading = true, error = null) }
+            _uiState.update { it.copy(isLoading = true,) }
 
             val currentMasjidId = _uiState.value.masjidId
 
@@ -95,11 +97,11 @@ class PrayerTimesViewModel(
             var newState = _uiState.value
             prayersResult
                 .onSuccess { prayers ->
-                    newState = newState.copy(prayers = prayers)
+                    newState = newState.copy(prayers = prayers,)
                 }
                 .onFailure { e ->
                     // Null out prayers on failure so UI shows nothing
-                    newState = newState.copy(prayers = null, error = e.message ?: "Unknown error")
+                    newState = newState.copy(error = e.message ?: "Unknown error",)
                 }
 
             // 2) Compute Qiyam window as Result
@@ -112,15 +114,24 @@ class PrayerTimesViewModel(
             qiyamResult
                 .onSuccess { qiyam ->
                     val ui = convertToQiyamUi(qiyam, bufferMinutes = newState.bufferMinutes)
-                    newState = newState.copy(qiyamWindow = qiyam, qiyamUiState = ui)
+                    newState = newState.copy(qiyamWindow = qiyam, qiyamUiState = ui,)
                 }
                 .onFailure { e ->
                     // Null out Qiyam data on failure so UI shows nothing
-                    newState = newState.copy(qiyamWindow = null, qiyamUiState = null, error = newState.error ?: (e.message ?: "Unknown error"))
+                    newState = newState.copy(error = newState.error ?: (e.message ?: "Unknown error"),)
                 }
 
+            val ds = repo.lastDataSource()
+            val label = when (ds) {
+                DataSource.REMOTE -> "Loaded from remote"
+                DataSource.LOCAL  -> "Loaded from local JSON"
+                DataSource.ASSET  -> "Loaded from assets"
+                else              -> null
+            }
+            newState = newState.copy(dataSourceLabel = label)
+
             // stop loading
-            _uiState.value = newState.copy(isLoading = false)
+            _uiState.value = newState.copy()
         }
     }
 
@@ -176,7 +187,7 @@ class PrayerTimesViewModel(
     }
 
     fun updateBuffer(v: Int) {
-        _uiState.update { it.copy(bufferMinutes = v.coerceIn(0, 120)) }
+        _uiState.update { it.copy(bufferMinutes = v.coerceIn(0, 120),) }
         recomputeQiyamUiFromState()
     }
 
@@ -194,34 +205,34 @@ class PrayerTimesViewModel(
     }
 
     fun updateDesiredSleepHours(v: Float) {
-        _uiState.update { it.copy(desiredSleepHours = v.coerceIn(4f, 12f)) }
+        _uiState.update { it.copy(desiredSleepHours = v.coerceIn(4f, 12f),) }
     }
 
     fun updatePostFajrBuffer(v: Int) {
-        _uiState.update { it.copy(postFajrBufferMin = v.coerceIn(0, 120)) }
+        _uiState.update { it.copy(postFajrBufferMin = v.coerceIn(0, 120),) }
     }
 
     fun updateIshaBuffer(v: Int) {
-        _uiState.update { it.copy(ishaBufferMin = v.coerceIn(0, 120)) }
+        _uiState.update { it.copy(ishaBufferMin = v.coerceIn(0, 120),) }
     }
 
     fun updateWeeklyGoal(v: Int) {
-        _uiState.update { it.copy(weeklyGoal = v.coerceIn(0, 7)) }
+        _uiState.update { it.copy(weeklyGoal = v.coerceIn(0, 7),) }
     }
 
     fun updateMinNightStart(v: String) {
-        _uiState.update { it.copy(minNightStart = v) }
+        _uiState.update { it.copy(minNightStart = v,) }
     }
 
     fun updatePostFajrCutoff(v: String) {
-        _uiState.update { it.copy(disallowPostFajrIfFajrAfter = v) }
+        _uiState.update { it.copy(disallowPostFajrIfFajrAfter = v,) }
     }
 
     fun updateNap(index: Int, config: NapConfig) {
         _uiState.update { s ->
             val list = s.naps.toMutableList()
             if (index in list.indices) list[index] = config
-            s.copy(naps = list)
+            s.copy(naps = list,)
         }
     }
 
@@ -236,7 +247,7 @@ class PrayerTimesViewModel(
                 else -> "16:00"
             }
             val updated = (current + NapConfig(start = defaultStart, durationMin = 0)).take(3)
-            s.copy(naps = updated)
+            s.copy(naps = updated,)
         }
     }
 
@@ -246,29 +257,25 @@ class PrayerTimesViewModel(
             if (index in list.indices) {
                 list.removeAt(index)
             }
-            s.copy(naps = list)
+            s.copy(naps = list,)
         }
     }
 
     fun updateLatestMorningEnd(v: String) {
-        _uiState.update { it.copy(latestMorningEnd = v) }
+        _uiState.update { it.copy(latestMorningEnd = v,) }
     }
 
     fun onApplyMasjidId() {
         val id = _uiState.value.masjidId.trim()
         if (id.isEmpty()) {
-            _uiState.update { it.copy(error = "Please enter a Masjid ID", isLoading = false) }
+            _uiState.update { it.copy(error = "Please enter a Masjid ID",) }
             return
         }
         // Clear all dependent state and start a fresh load
         _uiState.update {
             it.copy(
                 masjidId = id,
-                prayers = null,
-                qiyamWindow = null,
-                qiyamUiState = null,
                 isLoading = true,
-                error = null
             )
         }
         // Trigger a full refresh for the new masjid
@@ -276,6 +283,6 @@ class PrayerTimesViewModel(
     }
 
     fun updateMasjidId(v: String) {
-        _uiState.update { it.copy(masjidId = v) }
+        _uiState.update { it.copy(masjidId = v,) }
     }
 }

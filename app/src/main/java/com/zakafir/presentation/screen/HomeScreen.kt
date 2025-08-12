@@ -81,6 +81,12 @@ fun HomeScreen(
                         Text("Apply")
                     }
                 }
+                Text(
+                    text = vmUiState.dataSourceLabel ?: "",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = 4.dp)
+                )
             }
         }
         // Section: Today & Tomorrow

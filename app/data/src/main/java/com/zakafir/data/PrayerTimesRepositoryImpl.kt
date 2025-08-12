@@ -5,6 +5,7 @@ import com.zakafir.data.mapper.toDomain
 import com.zakafir.data.model.PrayerTimesDTO
 import com.zakafir.data.model.PrayersDTO
 import com.zakafir.data.model.QiyamWindowDTO
+import com.zakafir.domain.DataSource
 import com.zakafir.domain.PrayerTimesRepository
 import com.zakafir.domain.model.Prayers
 import com.zakafir.domain.model.QiyamWindow
@@ -28,6 +29,13 @@ class PrayerTimesRepositoryImpl(
 ) : PrayerTimesRepository {
     private val json = Json { ignoreUnknownKeys = true; isLenient = true }
     private var yearly: List<PrayerTimesDTO>? = null
+    private var cachedMasjidId: String? = null
+    private var lastSource: com.zakafir.domain.DataSource? = null
+
+    private fun Throwable.isNotFoundLike(): Boolean {
+        val msg = (message ?: "").lowercase(Locale.ROOT)
+        return "404" in msg || "not found" in msg || "no such" in msg
+    }
 
     override suspend fun getPrayersTime(masjidId: String): Result<Prayers> = runCatching {
         val today = Calendar.getInstance()
@@ -72,6 +80,7 @@ class PrayerTimesRepositoryImpl(
 
     private suspend fun ptFor(cal: Calendar, masjidId: String): PrayerTimesDTO? {
         val list = ensureYearly(masjidId) ?: return null
+        cachedMasjidId = masjidId
         val y = cal.get(Calendar.YEAR);
         val m = cal.get(Calendar.MONTH) + 1;
         val d = cal.get(Calendar.DAY_OF_MONTH)
@@ -84,29 +93,59 @@ class PrayerTimesRepositoryImpl(
     }
 
     private suspend fun ensureYearly(masjidId: String): List<PrayerTimesDTO>? {
+        // Reset in-memory cache when masjid changes
+        if (cachedMasjidId != masjidId) {
+            yearly = null
+        }
+
         yearly?.let { return it }
+
         val file = File(context.filesDir, fileName(masjidId))
 
-        // 1) filesDir
-        readTextOrNull(file)?.let { parseYearly(it).also { p -> yearly = p; return p } }
-        // 2) assets
+        // --- Remote-first ---
+        val remoteResult = runCatching { api.getYearlyCalendar(masjidId) }
+
+        remoteResult.onSuccess { raw ->
+            val parsed = when (raw) {
+                is String -> parseYearly(raw)
+                else -> parseYearly(json.encodeToJsonElement(raw).toString())
+            }
+            writeCanonical(file, parsed)
+            yearly = parsed
+            cachedMasjidId = masjidId
+            lastSource = com.zakafir.domain.DataSource.REMOTE
+            return parsed
+        }
+
+        // Remote failed
+        val error = remoteResult.exceptionOrNull()
+        if (error != null && error.isNotFoundLike()) {
+            // Strict: if the ID does not exist remotely, propagate failure (no local fallback)
+            lastSource = null
+            return null
+        }
+
+        // Non-404: allow local fallback if available
+        readTextOrNull(file)?.let { text ->
+            val parsed = parseYearly(text)
+            yearly = parsed
+            cachedMasjidId = masjidId
+            lastSource = com.zakafir.domain.DataSource.LOCAL
+            return parsed
+        }
+
+        // Optional assets fallback for bootstrap/demo when remote is down
         readAssetOrNull(context, fileName(masjidId))?.let { text ->
             val parsed = parseYearly(text)
             writeCanonical(file, parsed)
             yearly = parsed
+            cachedMasjidId = masjidId
+            lastSource = com.zakafir.domain.DataSource.ASSET
             return parsed
         }
-        // 3) fetch & persist
-        val raw = runCatching { api.getYearlyCalendar(masjidId) }.getOrElse { throw it }
-        val parsed = when (raw) {
-            is String -> parseYearly(raw)
-            else -> {
-                parseYearly(json.encodeToJsonElement(raw).toString())
-            }
-        }
-        writeCanonical(file, parsed)
-        yearly = parsed
-        return parsed
+
+        // Nothing worked; propagate as null so callers can return Result.failure
+        return null
     }
 
     private fun parseYearly(text: String): List<PrayerTimesDTO> =
@@ -181,4 +220,6 @@ class PrayerTimesRepositoryImpl(
         this[key]?.jsonPrimitive?.content ?: error("Missing $key")
 
     private fun JsonObject.strOrNull(key: String): String? = this[key]?.jsonPrimitive?.content
+
+    override fun lastDataSource(): DataSource? = lastSource
 }
