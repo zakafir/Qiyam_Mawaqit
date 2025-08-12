@@ -110,7 +110,8 @@ fun QiyamApp(
 
                     onUpdateNap = { index, config -> viewModel.updateNap(index, config) },
                     onAddNap = { viewModel.addNap() },
-                    onRemoveNap = { index -> viewModel.removeNap(index) }
+                    onRemoveNap = { index -> viewModel.removeNap(index) },
+                    onLatestMorningEndChange = { viewModel.updateLatestMorningEnd(it) }
                 )
             }
         }

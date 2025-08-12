@@ -35,11 +35,14 @@ import com.zakafir.qiyam_mawaqit.presentation.component.TimePickerField
 import kotlin.math.roundToInt
 
 
+private const val MIN_NAPS = 0
+
 @Composable
 fun SettingsScreen(
     onBufferChange: (Int) -> Unit,
     onGoalChange: (Int) -> Unit,
     ui: PrayerUiState,
+    onLatestMorningEndChange: (String) -> Unit,
     onDesiredSleepHoursChange: (Float) -> Unit,
     onPostFajrBufferMinChange: (Int) -> Unit,
     onIshaBufferMinChange: (Int) -> Unit,
@@ -104,6 +107,13 @@ fun SettingsScreen(
             onValueChange = onDisallowPostFajrIfFajrAfterChange
         )
 
+        // Latest post‑Fajr end
+        TimePickerField(
+            label = "Latest post‑Fajr end",
+            value = ui.latestMorningEnd,
+            onValueChange = onLatestMorningEndChange
+        )
+
         // Naps
         Divider()
         Text(text = "Naps", style = MaterialTheme.typography.titleSmall)
@@ -114,9 +124,11 @@ fun SettingsScreen(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(text = "Nap ${idx + 1}", style = MaterialTheme.typography.bodyMedium)
-                    if (ui.naps.size > 1) {
-                        TextButton(onClick = { onRemoveNap(idx) }) { Text("Remove") }
-                    }
+                    val canRemove = ui.naps.size > MIN_NAPS
+                    TextButton(
+                        onClick = { if (canRemove) onRemoveNap(idx) },
+                        enabled = canRemove
+                    ) { Text("Remove") }
                 }
                 TimePickerField(
                     label = "Start time",
@@ -132,7 +144,12 @@ fun SettingsScreen(
                 )
             }
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                Button(onClick = onAddNap) { Text("Add nap") }
+                val addLabel = when (ui.naps.size) {
+                    0 -> "Add midday nap"
+                    1 -> "Add evening nap"
+                    else -> "Add nap"
+                }
+                Button(onClick = onAddNap) { Text(addLabel) }
             }
         }
 
@@ -157,16 +174,16 @@ fun SettingsScreen(
 
         val qiyamStart = ui.qiyamWindow?.start
         val todayIsha = ui.prayers?.prayerTimes?.getOrNull(0)?.icha
-        val todayFajr = ui.prayers?.prayerTimes?.getOrNull(0)?.fajr
-        val todayDhuhr = ui.prayers?.prayerTimes?.getOrNull(0)?.dohr
+        val tomorrowFajr = ui.prayers?.prayerTimes?.getOrNull(1)?.fajr
+        val tomorrowDhuhr = ui.prayers?.prayerTimes?.getOrNull(1)?.dohr
 
 
         SleepScheduleCard(
-            desiredHours = ui.desiredSleepHours.toInt(),
+            desiredMinutes = desiredSleepMin,
             icha = todayIsha,
             qiyamStart = qiyamStart,
-            fajr = todayFajr,
-            dhuhr = todayDhuhr,
+            fajr = tomorrowFajr,
+            dhuhr = tomorrowDhuhr,
             allowPostFajr = ui.allowPostFajr,
             latestMorningEnd = ui.latestMorningEnd,
             postFajrBufferMin = ui.postFajrBufferMin,
@@ -180,7 +197,7 @@ fun SettingsScreen(
 
 @Composable
 private fun SleepScheduleCard(
-    desiredHours: Int,
+    desiredMinutes: Int,
     icha: String?,
     qiyamStart: String?,
     fajr: String?,
@@ -213,39 +230,56 @@ private fun SleepScheduleCard(
             val nightBlockMin = durationBetween(nightStart, qiyamStart)
             blocks += "Night sleep" to (nightStart to qiyamStart)
 
+            // We add blocks in priority order and CAP them so total never exceeds the target.
+            var remaining = (desiredMinutes - nightBlockMin).coerceAtLeast(0)
+
             var postFajrMin = 0
             if (allowPostFajr && fajr != null && compareHm(
                     fajr,
                     disallowPostFajrIfFajrAfter
-                ) <= 0
+                ) <= 0 && remaining > 0
             ) {
                 val startPost = addMinutes(fajr, postFajrBufferMin)
-                val endPost = latestMorningEnd
-                if (startPost != null && compareHm(endPost, startPost) > 0) {
-                    postFajrMin = durationBetween(startPost, endPost)
-                    blocks += "Post‑Fajr sleep" to (startPost to endPost)
+                val endPostLimit = latestMorningEnd
+                if (startPost != null && compareHm(endPostLimit, startPost) > 0) {
+                    val window = durationBetween(startPost, endPostLimit)
+                    val take = minOf(window, remaining)
+                    if (take > 0) {
+                        postFajrMin = take
+                        val cappedEnd = addMinutes(startPost, take) ?: endPostLimit
+                        blocks += "Post‑Fajr sleep" to (startPost to cappedEnd)
+                        remaining -= take
+                    }
                 }
             } else if (allowPostFajr && fajr != null) {
                 blocks += "Post‑Fajr sleep disabled (Fajr after ${disallowPostFajrIfFajrAfter})" to ("—" to "—")
             }
 
             var napsTotalMin = 0
-            naps.forEachIndexed { idx, nap ->
-                val start = nap.start
-                var end = addMinutes(start, nap.durationMin) ?: start
-                if (dhuhr != null && isBetween(dhuhr, start, end)) {
-                    val candidate = addMinutes(dhuhr, -prayerBuffer)
-                    if (candidate != null) end = candidate
-                }
-                if (compareHm(end, start) > 0 && nap.durationMin > 0) {
-                    val blockMin = durationBetween(start, end)
-                    napsTotalMin += blockMin
-                    blocks += ("Nap ${idx + 1}") to (start to end)
+            if (remaining > 0) {
+                naps.forEachIndexed { idx, nap ->
+                    if (remaining <= 0) return@forEachIndexed
+                    val start = nap.start
+                    var end = addMinutes(start, nap.durationMin) ?: start
+                    if (dhuhr != null && isBetween(dhuhr, start, end)) {
+                        val candidate = addMinutes(dhuhr, -prayerBuffer)
+                        if (candidate != null) end = candidate
+                    }
+                    if (compareHm(end, start) > 0 && nap.durationMin > 0) {
+                        val window = durationBetween(start, end)
+                        val take = minOf(window, remaining)
+                        if (take > 0) {
+                            napsTotalMin += take
+                            val cappedEnd = addMinutes(start, take) ?: end
+                            blocks += ("Nap ${idx + 1}") to (start to cappedEnd)
+                            remaining -= take
+                        }
+                    }
                 }
             }
 
             val totalMin = nightBlockMin + postFajrMin + napsTotalMin
-            val desiredMin = desiredHours * 60
+            val desiredMin = desiredMinutes
             val progress = (totalMin.toFloat() / desiredMin).coerceIn(0f, 1f)
 
             // UI
@@ -260,7 +294,7 @@ private fun SleepScheduleCard(
             }
 
             Divider()
-            Text("Total: ${formatHm(totalMin)}  /  Target: ${desiredHours}h")
+            Text("Total: ${formatHm(totalMin)}  /  Target: ${formatHm(desiredMin)}")
             val isUnder = totalMin < desiredMin
             LinearProgressIndicator(
                 progress = progress,
@@ -316,7 +350,8 @@ private fun PreviewSettings() {
         },
         onRemoveNap = { idx ->
             setNaps(naps.toMutableList().apply { removeAt(idx) })
-        }
+        },
+        onLatestMorningEndChange = {}
     )
 }
 

@@ -39,7 +39,7 @@ data class PrayerUiState(
     val naps: List<NapConfig> = emptyList(),
     val bufferMinutes: Int = 12,
     val allowPostFajr: Boolean = true,
-    val latestMorningEnd: String = "14:00"
+    val latestMorningEnd: String = "07:30"
 )
 
 data class QiyamUiState(
@@ -213,5 +213,9 @@ class PrayerTimesViewModel(
             }
             s.copy(naps = list)
         }
+    }
+
+    fun updateLatestMorningEnd(v: String) {
+        _uiState.update { it.copy(latestMorningEnd = v) }
     }
 }
