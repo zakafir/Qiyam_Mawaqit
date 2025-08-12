@@ -59,10 +59,9 @@ fun QiyamApp(
                     vmUiState = vmState,
                     onSchedule = { onScheduleTonight(it) },
                     onTestAlarmUi = { nav.navigate(Screen.Wake.route) },
-                    onOpenHistory = { nav.navigate(Screen.History.route) },
                     onOpenSettings = { nav.navigate(Screen.Settings.route) },
                     onMasjidIdChange = { viewModel.updateMasjidId(it) },
-                    onApplyMasjidId = { viewModel.onApplyMasjidId() }
+                    onSelectMasjidSuggestion = { viewModel.selectMasjidSuggestion(it) }
                 )
             }
             composable(Screen.Wake.route) {

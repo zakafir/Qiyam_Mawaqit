@@ -170,9 +170,9 @@ fun SettingsScreen(
         var disallowPostFajrIfFajrAfter by remember { mutableStateOf("06:30") } // disable post‑Fajr sleep if Fajr is later than this
 
         val qiyamStart = ui.qiyamWindow?.start
-        val todayIsha = ui.prayers?.prayerTimes?.getOrNull(0)?.icha
-        val tomorrowFajr = ui.prayers?.prayerTimes?.getOrNull(1)?.fajr
-        val tomorrowDhuhr = ui.prayers?.prayerTimes?.getOrNull(1)?.dohr
+        val todayIsha = ui.yearlyPrayers?.prayerTimes?.getOrNull(0)?.icha
+        val tomorrowFajr = ui.yearlyPrayers?.prayerTimes?.getOrNull(1)?.fajr
+        val tomorrowDhuhr = ui.yearlyPrayers?.prayerTimes?.getOrNull(1)?.dohr
 
 
         SleepScheduleCard(

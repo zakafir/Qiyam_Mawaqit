@@ -10,7 +10,7 @@ data class PrayerTimes(
     val icha: String
 )
 
-data class Prayers(
+data class YearlyPrayers(
     val prayerTimes: List<PrayerTimes>
 )
 

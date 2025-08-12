@@ -1,15 +1,14 @@
 package com.zakafir.presentation.screen
 
 
+import androidx.compose.foundation.clickable
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.Button
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.ui.text.input.ImeAction
 
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -19,11 +18,17 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Divider
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Text
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.unit.dp
 import kotlinx.datetime.LocalDateTime
 import com.zakafir.presentation.PrayerUiState
@@ -39,14 +44,68 @@ data class NapConfig(
 )
 
 @Composable
+fun MasjidPicker(
+    ui: PrayerUiState,
+    modifier: Modifier = Modifier,
+    updateMasjidId: (String) -> Unit,
+    selectMasjidSuggestion: (String?) -> Unit,
+) {
+
+    var isFocused by remember { mutableStateOf(false) }
+
+    Box(modifier) {
+        OutlinedTextField(
+            value = ui.masjidId,
+            onValueChange = updateMasjidId,
+            label = { Text("Masjid (Mawaqit)") },
+            singleLine = true,
+            modifier = Modifier
+                .fillMaxWidth()
+                .onFocusChanged { isFocused = it.isFocused }
+        )
+
+        val showSuggestions = isFocused && ui.searchResults.isNotEmpty()
+        if (showSuggestions) {
+            ElevatedCard(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 56.dp) // height of the text field
+            ) {
+                Column {
+                    ui.searchResults.forEach { item ->
+                        val title = item
+
+                        Row(
+                            Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    selectMasjidSuggestion(item.second)
+                                    isFocused = false
+                                }
+                                .padding(horizontal = 12.dp, vertical = 10.dp)
+                        ) {
+                            Column(Modifier.weight(1f)) {
+                                title.first?.let { title ->
+                                    Text(title, style = MaterialTheme.typography.bodyLarge)
+                                }
+                            }
+                        }
+                        Divider()
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
 fun HomeScreen(
     vmUiState: PrayerUiState,
     onMasjidIdChange: (String) -> Unit,
-    onApplyMasjidId: () -> Unit,
     onSchedule: (LocalDateTime) -> Unit,
     onTestAlarmUi: () -> Unit,
-    onOpenHistory: () -> Unit,
     onOpenSettings: () -> Unit,
+    onSelectMasjidSuggestion: (String?) -> Unit
 ) {
 
     LazyColumn(
@@ -62,25 +121,11 @@ fun HomeScreen(
         // Section: Mawaqit Masjid ID
         item {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                SectionTitle("Mawaqit mosque ID")
-                OutlinedTextField(
-                    value = vmUiState.masjidId,
-                    onValueChange = onMasjidIdChange,
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    label = { Text("Masjid ID (e.g. assalam-argenteuil)") },
-                    placeholder = { Text("Enter masjid_id from Mawaqit") },
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                    keyboardActions = KeyboardActions(onDone = { onApplyMasjidId() })
+                MasjidPicker(
+                    ui = vmUiState,
+                    updateMasjidId = onMasjidIdChange,
+                    selectMasjidSuggestion = onSelectMasjidSuggestion
                 )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    Button(onClick = onApplyMasjidId) {
-                        Text("Apply")
-                    }
-                }
                 Text(
                     text = vmUiState.dataSourceLabel ?: "",
                     style = MaterialTheme.typography.bodySmall,
@@ -92,7 +137,7 @@ fun HomeScreen(
         // Section: Today & Tomorrow
         item {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                vmUiState.prayers?.let { prayers ->
+                vmUiState.yearlyPrayers?.let { prayers ->
                     val list = prayers.prayerTimes
                     val today = list.getOrNull(0)
                     val tomorrow = list.getOrNull(1)
@@ -152,7 +197,7 @@ fun HomeScreen(
         // Section: Qiyam (Tonight)
         item {
             vmUiState.qiyamWindow?.let { qiyam ->
-                vmUiState.prayers?.let { prayers ->
+                vmUiState.yearlyPrayers?.let { prayers ->
                     val list = prayers.prayerTimes
                     val today = list.getOrNull(0)
                     TonightCard(

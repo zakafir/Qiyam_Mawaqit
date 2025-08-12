@@ -4,7 +4,7 @@ import com.zakafir.data.model.PrayerTimesDTO
 import com.zakafir.data.model.PrayersDTO
 import com.zakafir.data.model.QiyamWindowDTO
 import com.zakafir.domain.model.PrayerTimes
-import com.zakafir.domain.model.Prayers
+import com.zakafir.domain.model.YearlyPrayers
 import com.zakafir.domain.model.QiyamWindow
 
 // ---------------------------
@@ -24,16 +24,16 @@ fun PrayerTimesDTO.toDomain(): PrayerTimes =
 /**
  * If your API returns a wrapper object containing a list of PrayerTimesDTO.
  */
-fun PrayersDTO.toDomain(): Prayers =
-    Prayers(
+fun PrayersDTO.toDomain(): YearlyPrayers =
+    YearlyPrayers(
         prayerTimes = this.prayerTimesDTO.map { it.toDomain() }
     )
 
 /**
  * If your API returns a bare list (no wrapper), you can map it with this helper.
  */
-fun List<PrayerTimesDTO>.toDomain(): Prayers =
-    Prayers(
+fun List<PrayerTimesDTO>.toDomain(): YearlyPrayers =
+    YearlyPrayers(
         prayerTimes = this.map { it.toDomain() }
     )
 
@@ -51,7 +51,7 @@ fun PrayerTimes.toData(): PrayerTimesDTO =
         icha = icha
     )
 
-fun Prayers.toData(): PrayersDTO =
+fun YearlyPrayers.toData(): PrayersDTO =
     PrayersDTO(
         prayerTimesDTO = this.prayerTimes.map { it.toData() }
     )

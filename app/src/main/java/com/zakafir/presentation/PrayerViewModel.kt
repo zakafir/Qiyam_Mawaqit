@@ -2,15 +2,15 @@ package com.zakafir.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.zakafir.domain.DataSource
 import com.zakafir.domain.PrayerTimesRepository
-import com.zakafir.domain.model.Prayers
 import com.zakafir.domain.model.QiyamWindow
 import com.zakafir.presentation.screen.NapConfig
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.datetime.Clock
@@ -23,58 +23,35 @@ import kotlin.time.Duration.Companion.days
 import kotlinx.datetime.toInstant
 import kotlin.collections.plus
 
-data class PrayerUiState(
-    val masjidId: String = "",
-    val prayers: Prayers? = null,
-    val qiyamWindow: QiyamWindow? = null,
-    val qiyamUiState: QiyamUiState? = null,
-    val isLoading: Boolean = false,
-    val error: String? = null,
-    val streak: Int = 11,
-    val weeklyGoal: Int = 3,
-    // Advanced Sleep Planner controls (values only)
-    val desiredSleepHours: Float = 7.5f,
-    val postFajrBufferMin: Int = 60,
-    val ishaBufferMin: Int = 30,
-    val minNightStart: String = "21:30",
-    val disallowPostFajrIfFajrAfter: String = "06:30",
-    val naps: List<NapConfig> = emptyList(),
-    val bufferMinutes: Int = 12,
-    val allowPostFajr: Boolean = true,
-    val latestMorningEnd: String = "07:30",
-    val dataSourceLabel: String? = null,
-)
-
-data class QiyamUiState(
-    val start: LocalDateTime,
-    val end: LocalDateTime,
-    val suggestedWake: LocalDateTime
-)
-
 class PrayerTimesViewModel(
     private val repo: PrayerTimesRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(PrayerUiState())
     val uiState: StateFlow<PrayerUiState> = _uiState.asStateFlow()
+    private val _masjidQuery = MutableStateFlow("")
 
     init {
         viewModelScope.launch {
-            // Ask repo if a local JSON already exists (filename = <masjidId>.json)
-            val localId = try {
-                repo.findAnyLocalMasjidId()
-            } catch (_: Throwable) {
-                null
-            }
-
-            if (localId.isNullOrBlank()) {
-                // No local file: ensure empty masjidId in UI
-                _uiState.update { it.copy() }
-            } else {
-                // Found a local cached file -> set masjidId and load its data
-                _uiState.update { it.copy(masjidId = localId,) }
-                refresh()
-            }
+            _masjidQuery
+                .debounce(350)
+                .distinctUntilChanged()
+                .collect { q ->
+                    if (q.length < 2) {
+                        _uiState.update { it.copy(searchResults = emptyList(),) }
+                        return@collect
+                    }
+                    try {
+                        val results = repo.searchMosques(q)
+                        _uiState.update { it.copy(searchResults = results) }
+                    } catch (c: CancellationException) {
+                        print(c.message)
+                        _uiState.update { it.copy(searchResults = emptyList(),) }
+                    } catch (c: Throwable) {
+                        print(c.message)
+                        _uiState.update { it.copy(searchResults = emptyList(),) }
+                    }
+                }
         }
     }
 
@@ -97,7 +74,7 @@ class PrayerTimesViewModel(
             var newState = _uiState.value
             prayersResult
                 .onSuccess { prayers ->
-                    newState = newState.copy(prayers = prayers,)
+                    newState = newState.copy(yearlyPrayers = prayers,)
                 }
                 .onFailure { e ->
                     // Null out prayers on failure so UI shows nothing
@@ -120,15 +97,6 @@ class PrayerTimesViewModel(
                     // Null out Qiyam data on failure so UI shows nothing
                     newState = newState.copy(error = newState.error ?: (e.message ?: "Unknown error"),)
                 }
-
-            val ds = repo.lastDataSource()
-            val label = when (ds) {
-                DataSource.REMOTE -> "Loaded from remote"
-                DataSource.LOCAL  -> "Loaded from local JSON"
-                DataSource.ASSET  -> "Loaded from assets"
-                else              -> null
-            }
-            newState = newState.copy(dataSourceLabel = label)
 
             // stop loading
             _uiState.value = newState.copy()
@@ -284,5 +252,21 @@ class PrayerTimesViewModel(
 
     fun updateMasjidId(v: String) {
         _uiState.update { it.copy(masjidId = v,) }
+        _masjidQuery.value = v
+    }
+
+    fun selectMasjidSuggestion(slug: String?) {
+        if (slug == null || slug.isEmpty()) {
+            _uiState.update { it.copy(error = "Please enter a Masjid ID",) }
+            return
+        }
+        _uiState.update {
+            it.copy(
+                masjidId = slug,
+                isLoading = true,
+            )
+        }
+        // Trigger a full refresh for the new masjid
+        refresh()
     }
 }

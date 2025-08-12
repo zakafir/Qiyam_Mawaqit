@@ -1,15 +1,10 @@
 package com.zakafir.domain
 
-import com.zakafir.domain.model.Prayers
+import com.zakafir.domain.model.YearlyPrayers
 import com.zakafir.domain.model.QiyamWindow
 
-enum class DataSource { REMOTE, LOCAL, ASSET }
-
 interface PrayerTimesRepository {
-    suspend fun getPrayersTime(masjidId: String): Result<Prayers>
+    suspend fun getPrayersTime(masjidId: String): Result<YearlyPrayers>
     suspend fun computeQiyamWindow(masjidId: String): Result<QiyamWindow>
-
-    suspend fun findAnyLocalMasjidId(): String?
-
-    fun lastDataSource(): DataSource?
+    suspend fun searchMosques(word: String): List<Pair<String?, String?>>
 }
