@@ -1,6 +1,5 @@
 package com.zakafir.presentation
 
-import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.zakafir.domain.PrayerTimesRepository
@@ -24,6 +23,7 @@ import kotlinx.datetime.toInstant
 import kotlin.collections.plus
 
 data class PrayerUiState(
+    val masjidId: String = "",
     val prayers: Prayers? = null,
     val qiyamWindow: QiyamWindow? = null,
     val qiyamUiState: QiyamUiState? = null,
@@ -40,7 +40,7 @@ data class PrayerUiState(
     val naps: List<NapConfig> = emptyList(),
     val bufferMinutes: Int = 12,
     val allowPostFajr: Boolean = true,
-    val latestMorningEnd: String = "07:30"
+    val latestMorningEnd: String = "07:30",
 )
 
 data class QiyamUiState(
@@ -61,12 +61,11 @@ class PrayerTimesViewModel(
     fun refresh() {
         viewModelScope.launch {
             // start loading
-            _uiState.update { it.copy(isLoading = true, error = null) }
+            _uiState.update { it.copy(isLoading = true) }
 
             // load prayers
             val prayersResult = try {
-                repo.getY()
-                repo.getPrayersTime()
+                repo.getPrayersTime(_uiState.value.masjidId)
             } catch (ce: CancellationException) {
                 throw ce
             } catch (t: Throwable) {
@@ -76,7 +75,7 @@ class PrayerTimesViewModel(
             var newState = _uiState.value
             prayersResult
                 .onSuccess { prayers ->
-                    newState = newState.copy(prayers = prayers, error = null)
+                    newState = newState.copy(prayers = prayers)
                 }
                 .onFailure { e ->
                     newState = newState.copy(error = e.message ?: "Unknown error")
@@ -84,15 +83,18 @@ class PrayerTimesViewModel(
 
             // compute qiyam window and QiyamUiState (best-effort)
             val qiyamDto = try {
-                repo.computeQiyamWindow()
+                repo.computeQiyamWindow(masjidId = _uiState.value.masjidId)
             } catch (t: Throwable) {
+                _uiState.update { it.copy(isLoading = false, error = t.message ?: "Unknown error") }
                 null
             }
-            val qiyamUiState = qiyamDto?.let { convertToQiyamUi(it, bufferMinutes = _uiState.value.bufferMinutes) }
+            val qiyamUiState =
+                qiyamDto?.let { convertToQiyamUi(it, bufferMinutes = _uiState.value.bufferMinutes) }
             newState = newState.copy(qiyamWindow = qiyamDto, qiyamUiState = qiyamUiState)
 
             // stop loading
-            _uiState.value = newState.copy(isLoading = false)
+            _uiState.value = newState.copy()
+            _uiState.update { it.copy(isLoading = false) }
         }
     }
 
@@ -155,7 +157,12 @@ class PrayerTimesViewModel(
     private fun recomputeQiyamUiFromState() {
         val current = _uiState.value
         val updated = current.copy(
-            qiyamUiState = current.qiyamWindow?.let { convertToQiyamUi(it, bufferMinutes = current.bufferMinutes) }
+            qiyamUiState = current.qiyamWindow?.let {
+                convertToQiyamUi(
+                    it,
+                    bufferMinutes = current.bufferMinutes
+                )
+            },
         )
         _uiState.value = updated
     }
@@ -219,5 +226,9 @@ class PrayerTimesViewModel(
 
     fun updateLatestMorningEnd(v: String) {
         _uiState.update { it.copy(latestMorningEnd = v) }
+    }
+
+    fun updateMasjidId(v: String) {
+        _uiState.update { it.copy(masjidId = v) }
     }
 }

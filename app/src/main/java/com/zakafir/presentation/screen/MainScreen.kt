@@ -54,16 +54,15 @@ fun QiyamApp(
         ) {
             composable(Screen.Home.route) {
                 val viewModel: PrayerTimesViewModel = koinViewModel<PrayerTimesViewModel>()
-                LaunchedEffect(Unit) {
-                    viewModel.refresh()
-                }
                 val vmState = viewModel.uiState.collectAsState().value
                 HomeScreen(
                     vmUiState = vmState,
                     onSchedule = { onScheduleTonight(it) },
                     onTestAlarmUi = { nav.navigate(Screen.Wake.route) },
                     onOpenHistory = { nav.navigate(Screen.History.route) },
-                    onOpenSettings = { nav.navigate(Screen.Settings.route) }
+                    onOpenSettings = { nav.navigate(Screen.Settings.route) },
+                    onMasjidIdChange = { viewModel.updateMasjidId(it) },
+                    onApplyMasjidId = { viewModel.refresh() }
                 )
             }
             composable(Screen.Wake.route) {

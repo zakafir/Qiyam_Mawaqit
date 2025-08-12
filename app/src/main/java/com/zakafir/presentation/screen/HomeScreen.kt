@@ -2,6 +2,11 @@ package com.zakafir.presentation.screen
 
 
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.Button
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.ImeAction
 
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -36,6 +41,8 @@ data class NapConfig(
 @Composable
 fun HomeScreen(
     vmUiState: PrayerUiState,
+    onMasjidIdChange: (String) -> Unit,
+    onApplyMasjidId: () -> Unit,
     onSchedule: (LocalDateTime) -> Unit,
     onTestAlarmUi: () -> Unit,
     onOpenHistory: () -> Unit,
@@ -51,6 +58,30 @@ fun HomeScreen(
         // Streak
         item {
             StreakHeader(streak = vmUiState.streak, weeklyGoal = vmUiState.weeklyGoal)
+        }
+        // Section: Mawaqit Masjid ID
+        item {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                SectionTitle("Mawaqit mosque ID")
+                OutlinedTextField(
+                    value = vmUiState.masjidId,
+                    onValueChange = onMasjidIdChange,
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    label = { Text("Masjid ID (e.g. assalam-argenteuil)") },
+                    placeholder = { Text("Enter masjid_id from Mawaqit") },
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                    keyboardActions = KeyboardActions(onDone = { onApplyMasjidId() })
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    Button(onClick = onApplyMasjidId) {
+                        Text("Apply")
+                    }
+                }
+            }
         }
         // Section: Today & Tomorrow
         item {

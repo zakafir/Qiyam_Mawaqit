@@ -327,12 +327,11 @@ private fun PreviewSettings() {
         onBufferChange = {},
         onGoalChange = {},
         ui = PrayerUiState(
-            desiredSleepHours = 7.5f,
             postFajrBufferMin = 30,
             ishaBufferMin = 10,
             minNightStart = "21:00",
             disallowPostFajrIfFajrAfter = "06:00",
-            naps = naps
+            naps = naps,
         ),
         onDesiredSleepHoursChange = {},
         onPostFajrBufferMinChange = {},
