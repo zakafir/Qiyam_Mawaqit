@@ -20,6 +20,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Divider
 import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -31,6 +32,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.unit.dp
 import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.Clock
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
+import kotlinx.datetime.DatePeriod
 import com.zakafir.presentation.PrayerUiState
 import com.zakafir.presentation.StreakHeader
 import com.zakafir.presentation.component.HelperCard
@@ -56,7 +61,10 @@ fun MasjidPicker(
     Box(modifier) {
         OutlinedTextField(
             value = ui.masjidId,
-            onValueChange = updateMasjidId,
+            onValueChange = {
+                isFocused = true
+                updateMasjidId.invoke(it)
+            },
             label = { Text("Masjid (Mawaqit)") },
             singleLine = true,
             modifier = Modifier
@@ -74,13 +82,15 @@ fun MasjidPicker(
                 Column {
                     ui.searchResults.forEach { item ->
                         val title = item
-
                         Row(
                             Modifier
                                 .fillMaxWidth()
                                 .clickable {
-                                    selectMasjidSuggestion(item.second)
                                     isFocused = false
+                                    item.second?.let {
+                                        selectMasjidSuggestion(it)
+                                        updateMasjidId(it)
+                                    }
                                 }
                                 .padding(horizontal = 12.dp, vertical = 10.dp)
                         ) {
@@ -90,7 +100,7 @@ fun MasjidPicker(
                                 }
                             }
                         }
-                        Divider()
+                        HorizontalDivider()
                     }
                 }
             }
@@ -139,13 +149,22 @@ fun HomeScreen(
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 vmUiState.yearlyPrayers?.let { prayers ->
                     val list = prayers.prayerTimes
-                    val today = list.getOrNull(0)
-                    val tomorrow = list.getOrNull(1)
+
+                    // Figure out "today" based on the device timezone and pick entries from the yearly calendar
+                    val todayDate =
+                        Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
+                    val todayStr = todayDate.toString() // ISO-8601 yyyy-MM-dd
+
+                    // Find the first entry that matches today's date
+                    val todayIndex = list.indexOfFirst { it.date == todayStr }
+
+                    val today = list.getOrNull(todayIndex)
+                    val tomorrow = list.getOrNull(todayIndex + 1)
 
                     today?.let {
                         SectionTitle("Today's prayers")
                         Text(
-                            text = today.date ?: "",
+                            text = it.date ?: "",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(bottom = 4.dp)
@@ -159,10 +178,11 @@ fun HomeScreen(
                             highlight = setOf("Maghrib")
                         )
                     }
+
                     tomorrow?.let {
                         SectionTitle("Tomorrow's prayers")
                         Text(
-                            text = tomorrow.date.toString(),
+                            text = it.date?.toString() ?: "",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(bottom = 4.dp)

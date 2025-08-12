@@ -1,6 +1,7 @@
 package com.zakafir.data.local
 
 import android.content.Context
+import com.zakafir.data.mapper.toData
 import com.zakafir.domain.LocalDataSource
 import com.zakafir.domain.model.YearlyPrayers
 import java.io.File
@@ -33,7 +34,8 @@ class LocalDataSourceImpl(
         masjidId: String,
         yearly: YearlyPrayers
     ) {
-        val text = runCatching { json.encodeToString(yearly) }.getOrElse { throw it }
+        val dto = yearly.toData()
+        val text = runCatching { json.encodeToString(dto) }.getOrElse { throw it }
         context.openFileOutput("$masjidId.json", Context.MODE_PRIVATE).use { out ->
             out.write(text.toByteArray())
         }

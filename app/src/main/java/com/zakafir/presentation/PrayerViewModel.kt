@@ -38,7 +38,7 @@ class PrayerTimesViewModel(
                 .distinctUntilChanged()
                 .collect { q ->
                     if (q.length < 2) {
-                        _uiState.update { it.copy(searchResults = emptyList(),) }
+                        _uiState.update { PrayerUiState() }
                         return@collect
                     }
                     try {
@@ -231,23 +231,6 @@ class PrayerTimesViewModel(
 
     fun updateLatestMorningEnd(v: String) {
         _uiState.update { it.copy(latestMorningEnd = v,) }
-    }
-
-    fun onApplyMasjidId() {
-        val id = _uiState.value.masjidId.trim()
-        if (id.isEmpty()) {
-            _uiState.update { it.copy(error = "Please enter a Masjid ID",) }
-            return
-        }
-        // Clear all dependent state and start a fresh load
-        _uiState.update {
-            it.copy(
-                masjidId = id,
-                isLoading = true,
-            )
-        }
-        // Trigger a full refresh for the new masjid
-        refresh()
     }
 
     fun updateMasjidId(v: String) {
