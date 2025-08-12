@@ -26,7 +26,7 @@ fun PrayerTimesDTO.toDomain(): PrayerTimes =
  */
 fun PrayersDTO.toDomain(): Prayers =
     Prayers(
-        prayerTimes = this.prayerTimeDTOS.map { it.toDomain() }
+        prayerTimes = this.prayerTimesDTO.map { it.toDomain() }
     )
 
 /**
@@ -53,7 +53,7 @@ fun PrayerTimes.toData(): PrayerTimesDTO =
 
 fun Prayers.toData(): PrayersDTO =
     PrayersDTO(
-        prayerTimeDTOS = this.prayerTimes.map { it.toData() }
+        prayerTimesDTO = this.prayerTimes.map { it.toData() }
     )
 
 /**

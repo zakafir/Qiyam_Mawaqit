@@ -8,6 +8,8 @@ import com.zakafir.data.model.QiyamWindowDTO
 import com.zakafir.domain.PrayerTimesRepository
 import com.zakafir.domain.model.Prayers
 import com.zakafir.domain.model.QiyamWindow
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -30,57 +32,58 @@ class PrayerTimesRepositoryImpl(
     override suspend fun getPrayersTime(masjidId: String): Result<Prayers> = runCatching {
         val today = Calendar.getInstance()
         val tomorrow = (today.clone() as Calendar).apply { add(Calendar.DAY_OF_MONTH, 1) }
-        PrayersDTO(
-            listOf(
-                ptFor(cal = today, masjidId = masjidId),
-                ptFor(cal = tomorrow, masjidId = masjidId)
-            )
-        ).toDomain()
+        val todayPt = ptFor(cal = today, masjidId = masjidId)
+        val tomorrowPt = ptFor(cal = tomorrow, masjidId = masjidId)
+
+        if (todayPt == null || tomorrowPt == null) {
+            throw IllegalStateException("Prayer times data unavailable")
+        }
+
+        PrayersDTO(listOf(todayPt, tomorrowPt)).toDomain()
     }
 
-    override suspend fun computeQiyamWindow(masjidId: String): QiyamWindow {
+    override suspend fun computeQiyamWindow(masjidId: String): Result<QiyamWindow> = runCatching {
         val today = Calendar.getInstance()
         val tomorrow = (today.clone() as Calendar).apply { add(Calendar.DAY_OF_MONTH, 1) }
         val t = ptFor(cal = today, masjidId = masjidId)
         val n = ptFor(cal = tomorrow, masjidId = masjidId)
+        if (t == null || n == null) {
+            throw IllegalStateException("Prayer times data unavailable")
+        }
 
         val start = (today.clone() as Calendar).apply { setHM(t.icha) }
         val end = (tomorrow.clone() as Calendar).apply { setHM(n.fajr) }
-        val endMs = if (end.timeInMillis <= start.timeInMillis) end.apply {
-            add(
-                Calendar.DAY_OF_MONTH,
-                1
-            )
-        }.timeInMillis else end.timeInMillis
+        val endMs = if (end.timeInMillis <= start.timeInMillis) end.apply { add(Calendar.DAY_OF_MONTH, 1) }.timeInMillis else end.timeInMillis
         val lastThirdMs = start.timeInMillis + (endMs - start.timeInMillis) * 2 / 3
 
-        return QiyamWindowDTO(
-            start = (today.clone() as Calendar).apply { timeInMillis = lastThirdMs }.hhmm(),
-            end = (today.clone() as Calendar).apply { timeInMillis = endMs }.hhmm()
+        QiyamWindowDTO(
+            start = start.hhmm(),
+            end = (today.clone() as Calendar).apply { timeInMillis = lastThirdMs }.hhmm()
         ).toDomain()
     }
 
-    private suspend fun ptFor(cal: Calendar, masjidId: String): PrayerTimesDTO {
-        val list = ensureYearly(masjidId)
-        println(
-            "Yearly calendar stored at: ${
-                File(
-                    context.filesDir,
-                    fileName(masjidId)
-                ).absolutePath
-            }"
-        )
+    override suspend fun findAnyLocalMasjidId(): String? = withContext(Dispatchers.IO) {
+        val dir = context.filesDir
+        val latest = dir.listFiles()
+            ?.filter { it.isFile && it.name.endsWith(".json") }
+            ?.maxByOrNull { it.lastModified() }
+        latest?.name?.removeSuffix(".json")
+    }
+
+    private suspend fun ptFor(cal: Calendar, masjidId: String): PrayerTimesDTO? {
+        val list = ensureYearly(masjidId) ?: return null
         val y = cal.get(Calendar.YEAR);
         val m = cal.get(Calendar.MONTH) + 1;
         val d = cal.get(Calendar.DAY_OF_MONTH)
         val date = "%04d-%02d-%02d".format(Locale.FRANCE, y, m, d)
         return list.firstOrNull { it.date == date }?.let { it } ?: run {
+            if (list.isEmpty()) return null
             val idx = (cal.get(Calendar.DAY_OF_YEAR) - 1).coerceIn(0, list.lastIndex)
             list[idx].copy(date = date)
         }
     }
 
-    private suspend fun ensureYearly(masjidId: String): List<PrayerTimesDTO> {
+    private suspend fun ensureYearly(masjidId: String): List<PrayerTimesDTO>? {
         yearly?.let { return it }
         val file = File(context.filesDir, fileName(masjidId))
 

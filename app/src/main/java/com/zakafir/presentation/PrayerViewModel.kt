@@ -56,18 +56,38 @@ class PrayerTimesViewModel(
     private val _uiState = MutableStateFlow(PrayerUiState())
     val uiState: StateFlow<PrayerUiState> = _uiState.asStateFlow()
 
-    // No init block needed for lambda callbacks
+    init {
+        viewModelScope.launch {
+            // Ask repo if a local JSON already exists (filename = <masjidId>.json)
+            val localId = try {
+                repo.findAnyLocalMasjidId()
+            } catch (_: Throwable) {
+                null
+            }
+
+            if (localId.isNullOrBlank()) {
+                // No local file: ensure empty masjidId in UI
+                _uiState.update { it.copy(masjidId = "") }
+            } else {
+                // Found a local cached file -> set masjidId and load its data
+                _uiState.update { it.copy(masjidId = localId) }
+                refresh()
+            }
+        }
+    }
 
     fun refresh() {
         viewModelScope.launch {
-            // start loading
-            _uiState.update { it.copy(isLoading = true) }
+            // start loading & clear previous error
+            _uiState.update { it.copy(isLoading = true, error = null) }
 
-            // load prayers
+            val currentMasjidId = _uiState.value.masjidId
+
+            // 1) Load prayers as Result
             val prayersResult = try {
-                repo.getPrayersTime(_uiState.value.masjidId)
+                repo.getPrayersTime(currentMasjidId)
             } catch (ce: CancellationException) {
-                throw ce
+                Result.failure(ce)
             } catch (t: Throwable) {
                 Result.failure(t)
             }
@@ -78,23 +98,29 @@ class PrayerTimesViewModel(
                     newState = newState.copy(prayers = prayers)
                 }
                 .onFailure { e ->
-                    newState = newState.copy(error = e.message ?: "Unknown error")
+                    // Null out prayers on failure so UI shows nothing
+                    newState = newState.copy(prayers = null, error = e.message ?: "Unknown error")
                 }
 
-            // compute qiyam window and QiyamUiState (best-effort)
-            val qiyamDto = try {
-                repo.computeQiyamWindow(masjidId = _uiState.value.masjidId)
+            // 2) Compute Qiyam window as Result
+            val qiyamResult = try {
+                repo.computeQiyamWindow(currentMasjidId)
             } catch (t: Throwable) {
-                _uiState.update { it.copy(isLoading = false, error = t.message ?: "Unknown error") }
-                null
+                Result.failure(t)
             }
-            val qiyamUiState =
-                qiyamDto?.let { convertToQiyamUi(it, bufferMinutes = _uiState.value.bufferMinutes) }
-            newState = newState.copy(qiyamWindow = qiyamDto, qiyamUiState = qiyamUiState)
+
+            qiyamResult
+                .onSuccess { qiyam ->
+                    val ui = convertToQiyamUi(qiyam, bufferMinutes = newState.bufferMinutes)
+                    newState = newState.copy(qiyamWindow = qiyam, qiyamUiState = ui)
+                }
+                .onFailure { e ->
+                    // Null out Qiyam data on failure so UI shows nothing
+                    newState = newState.copy(qiyamWindow = null, qiyamUiState = null, error = newState.error ?: (e.message ?: "Unknown error"))
+                }
 
             // stop loading
-            _uiState.value = newState.copy()
-            _uiState.update { it.copy(isLoading = false) }
+            _uiState.value = newState.copy(isLoading = false)
         }
     }
 
@@ -226,6 +252,27 @@ class PrayerTimesViewModel(
 
     fun updateLatestMorningEnd(v: String) {
         _uiState.update { it.copy(latestMorningEnd = v) }
+    }
+
+    fun onApplyMasjidId() {
+        val id = _uiState.value.masjidId.trim()
+        if (id.isEmpty()) {
+            _uiState.update { it.copy(error = "Please enter a Masjid ID", isLoading = false) }
+            return
+        }
+        // Clear all dependent state and start a fresh load
+        _uiState.update {
+            it.copy(
+                masjidId = id,
+                prayers = null,
+                qiyamWindow = null,
+                qiyamUiState = null,
+                isLoading = true,
+                error = null
+            )
+        }
+        // Trigger a full refresh for the new masjid
+        refresh()
     }
 
     fun updateMasjidId(v: String) {

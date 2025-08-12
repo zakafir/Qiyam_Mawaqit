@@ -62,7 +62,7 @@ fun QiyamApp(
                     onOpenHistory = { nav.navigate(Screen.History.route) },
                     onOpenSettings = { nav.navigate(Screen.Settings.route) },
                     onMasjidIdChange = { viewModel.updateMasjidId(it) },
-                    onApplyMasjidId = { viewModel.refresh() }
+                    onApplyMasjidId = { viewModel.onApplyMasjidId() }
                 )
             }
             composable(Screen.Wake.route) {

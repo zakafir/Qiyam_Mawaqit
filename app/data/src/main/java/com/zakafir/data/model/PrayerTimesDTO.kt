@@ -15,7 +15,7 @@ data class PrayerTimesDTO(
 
 @Serializable
 data class PrayersDTO(
-    val prayerTimeDTOS: List<PrayerTimesDTO>
+    val prayerTimesDTO: List<PrayerTimesDTO>
 )
 
 @Serializable
