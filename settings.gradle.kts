@@ -21,3 +21,5 @@ dependencyResolutionManagement {
 
 rootProject.name = "Qiyam_Mawaqit"
 include(":app")
+include(":app:domain")
+include(":app:data")
