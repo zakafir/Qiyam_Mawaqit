@@ -68,7 +68,7 @@ fun MasjidPicker(
 
     Box(modifier) {
         OutlinedTextField(
-            value = ui.masjidId,
+            value = ui.selectedMosque?.displayLine ?: ui.masjidId,
             onValueChange = {
                 isFocused = true
                 updateMasjidId.invoke(it)
