@@ -83,7 +83,7 @@ fun TonightCard(
                     onLogPrayed(true)
                 },
                 colors = ButtonDefaults.outlinedButtonColors(
-                    containerColor = if (qiyamUiState.prayed) Color.Green else MaterialTheme.colorScheme.surface,
+                    containerColor = if (qiyamUiState.prayed) Color(0xFF10B981) else MaterialTheme.colorScheme.surface,
                     contentColor = if (qiyamUiState.prayed) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
                 )
             ) { Text("Log Qiyam as Prayed") }

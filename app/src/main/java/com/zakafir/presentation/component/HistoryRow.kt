@@ -35,7 +35,9 @@ fun HistoryRow(log: QiyamLog) {
                 modifier = Modifier
                     .size(40.dp)
                     .clip(CircleShape)
-                    .background(if (log.prayed) Color(0xFF10B981) else Color(0xFFEF4444)),
+                    .background(if (log.prayed)
+                        Color(0xFF10B981) else
+                            Color(0xFFEF4444)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(Icons.Default.Check, contentDescription = null, tint = Color.White)
