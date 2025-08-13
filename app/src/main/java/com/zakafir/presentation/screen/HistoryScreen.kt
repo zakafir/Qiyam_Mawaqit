@@ -10,18 +10,24 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import kotlinx.datetime.LocalDate
-import com.zakafir.presentation.QiyamLog
+import com.zakafir.domain.model.QiyamLog
 import com.zakafir.presentation.component.HistoryRow
 
 @Composable
-fun HistoryScreen(history: List<QiyamLog>) {
+fun HistoryScreen(
+    history: List<QiyamLog>,
+) {
+
     LazyColumn(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         item {
-            Text("History", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+            Text(
+                "History",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
         }
         items(history) { item ->
             HistoryRow(item)
@@ -34,8 +40,12 @@ fun HistoryScreen(history: List<QiyamLog>) {
 private fun PreviewHistory() {
     HistoryScreen(
         history = listOf(
-            QiyamLog(date = LocalDate(2025, 1, 1), prayed = true, woke = true),
-            QiyamLog(date = LocalDate(2025, 1, 2), prayed = false, woke = true),
+            QiyamLog(
+                prayed = true, date = "2020-01-01"
+            ),
+            QiyamLog(
+                prayed = true, date = "2020-01-01"
+            )
         )
     )
 }

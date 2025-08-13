@@ -14,7 +14,7 @@ import kotlinx.datetime.*
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class QiyamLog(
+data class QiyamLogDTO(
     val date: LocalDate,
     val woke: Boolean,
     val prayed: Boolean

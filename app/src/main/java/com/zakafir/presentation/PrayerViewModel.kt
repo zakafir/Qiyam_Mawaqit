@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.zakafir.domain.PrayerTimesRepository
 import com.zakafir.domain.model.PrayerTimes
+import com.zakafir.domain.model.QiyamLog
 import com.zakafir.domain.model.QiyamMode
 import com.zakafir.domain.model.QiyamWindow
 import com.zakafir.presentation.screen.NapConfig
@@ -77,7 +78,7 @@ class PrayerTimesViewModel(
     fun refresh() {
         viewModelScope.launch {
             // start loading & clear previous error
-            _uiState.update { it.copy(isLoading = true) }
+            _uiState.update { it.copy(isLoading = true, error = null) }
 
             val currentMasjidId =
                 _uiState.value.yearlyPrayers?.deducedMasjidId ?: _uiState.value.masjidId
@@ -91,18 +92,28 @@ class PrayerTimesViewModel(
                 Result.failure(t)
             }
 
-            var newState = _uiState.value
             prayersResult
                 .onSuccess { prayers ->
-                    newState =
-                        newState.copy(yearlyPrayers = prayers, masjidId = prayers.deducedMasjidId)
+                    _uiState.update {
+                        it.copy(
+                            yearlyPrayers = prayers,
+                            masjidId = prayers.deducedMasjidId,
+                            error = null
+                        )
+                    }
                 }
                 .onFailure { e ->
                     // Null out prayers on failure so UI shows nothing
-                    newState = newState.copy(error = e.message ?: "Unknown error")
+                    _uiState.update { it.copy(error = e.message ?: "Unknown error", yearlyPrayers = null) }
                 }
-            // stop loading
-            _uiState.value = newState.copy()
+
+            val streak = repo.getCurrentStreak()
+            _uiState.update { it.copy(streak = streak, isLoading = false) }
+
+            // Load today's qiyam status AFTER other updates to avoid being overwritten
+            loadTodayQiyamStatus()
+            // Also load history so it is present even after recomputations
+            loadQiyamHistory()
         }
     }
 
@@ -137,9 +148,23 @@ class PrayerTimesViewModel(
 
             qiyamResult
                 .onSuccess { qiyam ->
+                    // Preserve prayed + history across recomputations
+                    val calendar = java.util.Calendar.getInstance()
+                    val year = calendar.get(java.util.Calendar.YEAR)
+                    val month = calendar.get(java.util.Calendar.MONTH) + 1
+                    val day = calendar.get(java.util.Calendar.DAY_OF_MONTH)
+                    val dateStr = String.format("%04d-%02d-%02d", year, month, day)
+
+                    val preservedPrayed = uiState.value.qiyamUiState?.prayed ?: run {
+                        runCatching { repo.getQiyamStatusForDate(dateStr) }.getOrDefault(false)
+                    }
+                    val preservedHistory = uiState.value.qiyamUiState?.qiyamHistory ?: run {
+                        runCatching { repo.getQiyamHistory() }.getOrDefault(emptyList())
+                    }
+
                     _uiState.update { s ->
-                        val ui =
-                            convertToQiyamUi(qiyam, mode = mode, bufferMinutes = s.bufferMinutes)
+                        val ui = convertToQiyamUi(qiyam, mode = mode, bufferMinutes = s.bufferMinutes)
+                            .copy(prayed = preservedPrayed, qiyamHistory = preservedHistory)
                         s.copy(qiyamUiState = ui, error = null)
                     }
                 }
@@ -314,8 +339,20 @@ class PrayerTimesViewModel(
                 }
                 res
                     .onSuccess { q ->
+                        val calendar = java.util.Calendar.getInstance()
+                        val year = calendar.get(java.util.Calendar.YEAR)
+                        val month = calendar.get(java.util.Calendar.MONTH) + 1
+                        val day = calendar.get(java.util.Calendar.DAY_OF_MONTH)
+                        val dateStr = String.format("%04d-%02d-%02d", year, month, day)
+                        val preservedPrayed = uiState.value.qiyamUiState?.prayed ?: run {
+                            runCatching { repo.getQiyamStatusForDate(dateStr) }.getOrDefault(false)
+                        }
+                        val preservedHistory = uiState.value.qiyamUiState?.qiyamHistory ?: run {
+                            runCatching { repo.getQiyamHistory() }.getOrDefault(emptyList())
+                        }
                         _uiState.update { s ->
                             val ui = convertToQiyamUi(q, mode = it, bufferMinutes = s.bufferMinutes)
+                                .copy(prayed = preservedPrayed, qiyamHistory = preservedHistory)
                             s.copy(qiyamUiState = ui, error = null)
                         }
                     }
@@ -358,14 +395,63 @@ class PrayerTimesViewModel(
     }
 
     fun updateCommuteFromMin(it: Int) {
-        _uiState.update { s -> s.copy(workState = s.workState.copy(commuteFromMin = it.coerceAtLeast(0))) }
+        _uiState.update { s ->
+            s.copy(
+                workState = s.workState.copy(
+                    commuteFromMin = it.coerceAtLeast(
+                        0
+                    )
+                )
+            )
+        }
         viewModelScope.launch { runCatching { repo.updateCommuteFromMin(it) } }
     }
+
     fun resetData() {
         _uiState.value = PrayerUiState()
         _masjidQuery.value = ""
         lastTodays = null
         lastTomorrows = null
         selectedQiyamMode = QiyamMode.LastThird
+    }
+
+    fun logQiyamForToday(prayed: Boolean) {
+        viewModelScope.launch {
+            val calendar = java.util.Calendar.getInstance()
+            val year = calendar.get(java.util.Calendar.YEAR)
+            val month = calendar.get(java.util.Calendar.MONTH) + 1 // Calendar.MONTH is zero-based
+            val day = calendar.get(java.util.Calendar.DAY_OF_MONTH)
+            val dateStr = String.format("%04d-%02d-%02d", year, month, day)
+
+            repo.logQiyam(dateStr, prayed)
+            val saved = repo.getQiyamStatusForDate(dateStr)
+            _uiState.update { it.copy(qiyamUiState = it.qiyamUiState?.copy(prayed = saved)) }
+
+            // Update streak right after logging
+            val streak = repo.getCurrentStreak()
+            _uiState.update { it.copy(streak = streak) }
+        }
+    }
+
+    fun loadTodayQiyamStatus() {
+        viewModelScope.launch {
+            val calendar = java.util.Calendar.getInstance()
+            val year = calendar.get(java.util.Calendar.YEAR)
+            val month = calendar.get(java.util.Calendar.MONTH) + 1
+            val day = calendar.get(java.util.Calendar.DAY_OF_MONTH)
+            val dateStr = String.format("%04d-%02d-%02d", year, month, day)
+
+            val prayed = repo.getQiyamStatusForDate(dateStr)
+            _uiState.update { it.copy(qiyamUiState = it.qiyamUiState?.copy(prayed = prayed)) }
+        }
+    }
+
+    fun loadQiyamHistory() {
+        viewModelScope.launch {
+            val history: List<QiyamLog> = repo.getQiyamHistory()
+            _uiState.update { state ->
+                state.copy(qiyamUiState = state.qiyamUiState?.copy(qiyamHistory = history))
+            }
+        }
     }
 }

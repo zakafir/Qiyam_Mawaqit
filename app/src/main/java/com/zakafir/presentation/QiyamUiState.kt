@@ -1,5 +1,6 @@
 package com.zakafir.presentation
 
+import com.zakafir.domain.model.QiyamLog
 import com.zakafir.domain.model.QiyamMode
 import com.zakafir.domain.model.QiyamWindow
 import kotlinx.datetime.LocalDateTime
@@ -10,5 +11,7 @@ data class QiyamUiState(
     val duration: String,
     val mode: QiyamMode,
     val window: QiyamWindow? = null,
-    val suggestedWake: LocalDateTime
+    val suggestedWake: LocalDateTime,
+    val prayed: Boolean = false,
+    val qiyamHistory: List<QiyamLog> = emptyList()
 )

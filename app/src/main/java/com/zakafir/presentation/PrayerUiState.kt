@@ -16,7 +16,7 @@ data class PrayerUiState(
     val workState: WorkingUiState = WorkingUiState(),
     val isLoading: Boolean = false,
     val error: String? = null,
-    val streak: Int = 11,
+    val streak: Int = 0,
     val weeklyGoal: Int = 3,
     // Advanced Sleep Planner controls (values only)
     val desiredSleepHours: Float = 7.5f,

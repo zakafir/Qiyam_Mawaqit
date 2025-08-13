@@ -1,6 +1,7 @@
 package com.zakafir.domain
 
 import com.zakafir.domain.model.PrayerTimes
+import com.zakafir.domain.model.QiyamLog
 import com.zakafir.domain.model.QiyamMode
 import com.zakafir.domain.model.QiyamWindow
 import com.zakafir.domain.model.YearlyPrayers
@@ -37,5 +38,11 @@ interface LocalDataSource {
 
     // Naps: simple serialization, e.g. "12:00|30;18:00|20"
     fun setNapsSerialized(serialized: String)
+
+    fun logQiyam(date: String, prayed: Boolean)
+
+    fun getCurrentStreak(): Int
+
+    fun getQiyamHistory(): List<QiyamLog>
 
 }

@@ -14,14 +14,18 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.decodeFromString
 import androidx.core.content.edit
+import com.zakafir.data.model.QiyamLogDTO
+import com.zakafir.domain.model.QiyamLog
 import com.zakafir.domain.model.QiyamMode
-
+import kotlinx.serialization.Serializable
+import java.util.Calendar
 
 class LocalDataSourceImpl(
     private val context: Context,
     private val prefs: SharedPreferences,
-): LocalDataSource {
+) : LocalDataSource {
     private val json = Json { prettyPrint = true; ignoreUnknownKeys = true }
+    private val QIYAM_HISTORY_KEY = "qiyam_history"
 
     override fun readYearlyPrayers(masjidId: String): YearlyPrayers? {
         val file = File(context.filesDir, "$masjidId.json")
@@ -61,6 +65,7 @@ class LocalDataSourceImpl(
                 require(h in 0..23 && m in 0..59) { "Invalid time value: $hhmm" }
                 return h * 60 + m
             }
+
             fun formatMinutes(minutes: Int): String {
                 val total = ((minutes % (24 * 60)) + (24 * 60)) % (24 * 60) // wrap safely
                 val h = total / 60
@@ -84,18 +89,21 @@ class LocalDataSourceImpl(
                     val e = fajrTomorrowAbs
                     s to e
                 }
+
                 is QiyamMode.LastHalf -> {
                     val half = maghribToday + (nightLength / 2)
                     val s = maxOf(half, ishaToday) // never before Isha
                     val e = fajrTomorrowAbs
                     s to e
                 }
+
                 is QiyamMode.LastThird -> {
                     val lastThirdStartAbs = fajrTomorrowAbs - (nightLength / 3)
                     val s = maxOf(lastThirdStartAbs, ishaToday) // never before Isha
                     val e = fajrTomorrowAbs
                     s to e
                 }
+
                 is QiyamMode.Dawud -> {
                     // Dawud: middle third of the night (4th–5th sixths): [Maghrib + 1/2 L, Maghrib + 5/6 L], then clamp to [Isha, Fajr].
                     val half = maghribToday + (nightLength / 2)
@@ -179,5 +187,56 @@ class LocalDataSourceImpl(
 
     override fun setNapsSerialized(serialized: String) {
         prefs.edit { putString("naps_serialized", serialized) }
+    }
+
+    override fun logQiyam(date: String, prayed: Boolean) {
+        val historyJson = prefs.getString(QIYAM_HISTORY_KEY, null)
+        val currentHistory = if (historyJson != null) {
+            runCatching { json.decodeFromString<MutableList<QiyamLogDTO>>(historyJson) }.getOrNull()
+                ?: mutableListOf()
+        } else {
+            mutableListOf()
+        }
+        // Remove any existing entry with the same date
+        currentHistory.removeAll { it.date == date }
+        // Add new entry
+        currentHistory.add(QiyamLogDTO(date, prayed))
+        // Save back
+        val newJson = json.encodeToString(currentHistory)
+        prefs.edit { putString(QIYAM_HISTORY_KEY, newJson) }
+    }
+
+    override fun getQiyamHistory(): List<QiyamLog> {
+        val historyJson = prefs.getString(QIYAM_HISTORY_KEY, null) ?: return emptyList()
+        return runCatching {
+            json.decodeFromString<List<QiyamLogDTO>>(historyJson).map { it.toDomain() }
+        }.getOrNull() ?: emptyList()
+    }
+
+    override fun getCurrentStreak(): Int {
+        val history = getQiyamHistory()
+        if (history.isEmpty()) return 0
+
+        // Map history by date for quick lookup
+        val historyMap = history.associateBy { it.date }
+
+        val calendar = Calendar.getInstance()
+        var streak = 0
+
+        while (true) {
+            val year = calendar.get(Calendar.YEAR)
+            val month = calendar.get(Calendar.MONTH) + 1
+            val day = calendar.get(Calendar.DAY_OF_MONTH)
+            val dateStr = String.format("%04d-%02d-%02d", year, month, day)
+
+            val log = historyMap[dateStr]
+            if (log == null || !log.prayed) {
+                break
+            }
+            streak++
+            calendar.add(Calendar.DAY_OF_MONTH, -1)
+        }
+
+        return streak
     }
 }

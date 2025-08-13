@@ -5,8 +5,10 @@ import com.zakafir.domain.model.MosqueDetails
 
 import com.zakafir.data.model.PrayerTimesDTO
 import com.zakafir.data.model.PrayersDTO
+import com.zakafir.data.model.QiyamLogDTO
 import com.zakafir.data.model.QiyamWindowDTO
 import com.zakafir.domain.model.PrayerTimes
+import com.zakafir.domain.model.QiyamLog
 import com.zakafir.domain.model.YearlyPrayers
 import com.zakafir.domain.model.QiyamWindow
 
@@ -88,4 +90,17 @@ fun YearlyPrayers.toData(): PrayersDTO =
         deducedMasjidId = this.deducedMasjidId,
         displayedMasjidName = this.displayedMasjidName,
         prayerTimesDTO = this.prayerTimes.map { it.toData() }
+    )
+
+fun QiyamWindowDTO.toDomain(): QiyamWindow =
+    QiyamWindow(
+        start = start,
+        end = end
+    )
+
+fun QiyamLogDTO.toDomain(): QiyamLog =
+    QiyamLog(
+        date = date,
+        prayed = prayed
+
     )

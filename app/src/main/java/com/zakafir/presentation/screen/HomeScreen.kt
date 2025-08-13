@@ -14,8 +14,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.height
 
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
@@ -33,14 +31,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.ui.text.font.FontWeight
 import com.zakafir.domain.model.MosqueDetails
 import com.zakafir.domain.model.PrayerTimes
 import com.zakafir.domain.model.QiyamMode
-import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -123,12 +118,12 @@ fun MasjidPicker(
 fun HomeScreen(
     vmUiState: PrayerUiState,
     onMasjidIdChange: (String) -> Unit,
-    onSchedule: (LocalDateTime) -> Unit,
     onTestAlarmUi: () -> Unit,
     onSelectMasjidSuggestion: (String?) -> Unit,
     onComputeQiyam: (PrayerTimes?, PrayerTimes?) -> Unit,
     onModeChange: (QiyamMode) -> Unit,
-    onOpenDetailsScreen: (MosqueDetails) -> Unit
+    onOpenDetailsScreen: (MosqueDetails) -> Unit,
+    onLogPrayed: (Boolean) -> Unit,
 ) {
 
     LazyColumn(
@@ -255,17 +250,13 @@ fun HomeScreen(
         item {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 vmUiState.qiyamUiState?.let { qiyamUiState ->
-                    vmUiState.yearlyPrayers?.let { prayers ->
-                        val list = prayers.prayerTimes
-                        val today = list.getOrNull(0)
-                        TonightCard(
-                            date = today?.date ?: "",
-                            qiyamUiState = qiyamUiState,
-                            onSchedule = onSchedule,
-                            onTestAlarmUi = onTestAlarmUi,
-                            onModeChange = onModeChange
-                        )
-                    }
+                    TonightCard(
+                        qiyamUiState = qiyamUiState,
+                        onTestAlarmUi = onTestAlarmUi,
+                        onModeChange = onModeChange,
+                        onLogPrayed = onLogPrayed
+                    )
+
                 }
             }
         }

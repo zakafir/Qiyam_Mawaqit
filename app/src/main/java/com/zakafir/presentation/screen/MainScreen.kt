@@ -24,24 +24,16 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import org.koin.androidx.compose.koinViewModel
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import com.zakafir.presentation.PrayerTimesViewModel
-import com.zakafir.presentation.QiyamLog
 import com.zakafir.presentation.navigation.Screen
-import com.zakafir.domain.model.MosqueDetails
 
 
 @Composable
 fun QiyamApp(
-    onScheduleTonight: (LocalDateTime) -> Unit = {},
-    onMarkWoke: (LocalDate) -> Unit = {},
-    onMarkPrayed: (LocalDate) -> Unit = {},
-    onUpdateBuffer: (Int) -> Unit = {},
-    onUpdateWeeklyGoal: (Int) -> Unit = {}
 ) {
     val nav = rememberNavController()
     val sharedViewModel: PrayerTimesViewModel = koinViewModel()
@@ -58,7 +50,6 @@ fun QiyamApp(
                 val vmState = sharedViewModel.uiState.collectAsState().value
                 HomeScreen(
                     vmUiState = vmState,
-                    onSchedule = { onScheduleTonight(it) },
                     onTestAlarmUi = { nav.navigate(Screen.Wake.route) },
                     onMasjidIdChange = { sharedViewModel.updateMasjidId(it) },
                     onSelectMasjidSuggestion = { sharedViewModel.selectMasjidSuggestion(it) },
@@ -68,17 +59,15 @@ fun QiyamApp(
                     onModeChange = { sharedViewModel.updateQiyamMode(it) },
                     onOpenDetailsScreen = { selectedMosque ->
                         nav.navigate(Screen.Details.route)
-                    }
+                    },
+                    onLogPrayed = { prayed -> sharedViewModel.logQiyamForToday(prayed) },
                 )
             }
             composable(Screen.Wake.route) {
                 val vmState = sharedViewModel.uiState.collectAsState().value
                 val fallbackTime = LocalDateTime(2025, 1, 1, 3, 30)
-                val fallbackDate = LocalDate(2025, 1, 1)
                 WakeScreen(
                     time = vmState.qiyamUiState?.suggestedWake ?: fallbackTime,
-                    onImUp = { onMarkWoke(fallbackDate); nav.popBackStack() },
-                    onMarkPrayed = { onMarkPrayed(fallbackDate); nav.popBackStack() },
                     onSnooze = { /* no-op in UI-only demo */ }
                 )
             }
@@ -91,7 +80,7 @@ fun QiyamApp(
                         onCancel = {
                             sharedViewModel.resetData()
                             nav.popBackStack()
-                                   },
+                        },
                         onConfirm = {
                             sharedViewModel.refresh()
                             nav.popBackStack()
@@ -101,12 +90,14 @@ fun QiyamApp(
             }
             composable(Screen.History.route) {
                 val vmState = sharedViewModel.uiState.collectAsState().value
-                HistoryScreen(
-                    listOf(
-                        QiyamLog(date = LocalDate(2025, 1, 1), prayed = true, woke = true),
-                        QiyamLog(date = LocalDate(2025, 1, 2), prayed = false, woke = true),
+                LaunchedEffect(Unit) {
+                    sharedViewModel.loadQiyamHistory()
+                }
+                vmState.qiyamUiState?.qiyamHistory?.let { history ->
+                    HistoryScreen(
+                        history = history
                     )
-                )
+                }
             }
             composable(Screen.Settings.route) {
                 val vmState = sharedViewModel.uiState.collectAsState().value

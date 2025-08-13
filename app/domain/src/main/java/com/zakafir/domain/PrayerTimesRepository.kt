@@ -2,6 +2,7 @@ package com.zakafir.domain
 
 import com.zakafir.domain.model.MosqueDetails
 import com.zakafir.domain.model.PrayerTimes
+import com.zakafir.domain.model.QiyamLog
 import com.zakafir.domain.model.QiyamMode
 import com.zakafir.domain.model.YearlyPrayers
 import com.zakafir.domain.model.QiyamWindow
@@ -33,4 +34,10 @@ interface PrayerTimesRepository {
 
     // Naps
     fun setNapsSerialized(serialized: String)
+
+    fun logQiyam(date: String, prayed: Boolean)
+
+    fun getCurrentStreak(): Int
+    fun getQiyamStatusForDate(date: String): Boolean
+    fun getQiyamHistory(): List<QiyamLog>
 }

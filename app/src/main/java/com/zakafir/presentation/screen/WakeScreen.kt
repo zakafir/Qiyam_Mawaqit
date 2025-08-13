@@ -30,8 +30,6 @@ import com.zakafir.presentation.timeOnly
 @Composable
 fun WakeScreen(
     time: LocalDateTime,
-    onImUp: () -> Unit,
-    onMarkPrayed: () -> Unit,
     onSnooze: () -> Unit
 ) {
     val gradient = Brush.verticalGradient(listOf(Color(0xFF111827), Color(0xFF1F2937)))
@@ -45,11 +43,11 @@ fun WakeScreen(
             Text("Time for Qiyam", color = Color(0xFFE5E7EB), fontSize = 20.sp)
             Text(timeOnly(time), color = Color.White, fontSize = 56.sp, fontWeight = FontWeight.Bold)
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                FilledTonalButton(onClick = onImUp) { Text("I'm up") }
+                FilledTonalButton(onClick = {  }) { Text("I'm up") }
                 OutlinedButton(onClick = onSnooze) { Text("Snooze 5") }
             }
             AssistChip(
-                onClick = onMarkPrayed,
+                onClick = {  },
                 label = { Text("Mark prayed") },
                 leadingIcon = { Icon(Icons.Default.Check, contentDescription = null) },
             )
@@ -64,8 +62,6 @@ private fun PreviewWake() {
     MaterialTheme(colorScheme = darkColorScheme()) {
         WakeScreen(
             time = LocalDateTime(2025, 1, 1, 3, 30),
-            onImUp = {},
-            onMarkPrayed = {},
             onSnooze = {}
         )
     }

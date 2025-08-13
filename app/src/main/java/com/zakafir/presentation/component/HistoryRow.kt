@@ -23,13 +23,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.zakafir.presentation.QiyamLog
+import com.zakafir.domain.model.QiyamLog
 
 
 @Composable
 fun HistoryRow(log: QiyamLog) {
     val prayed = if (log.prayed) "Prayed" else "Missed"
-    val woke = if (log.woke) "Woke" else "Slept"
     Card(shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth()) {
         Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(
@@ -43,8 +42,8 @@ fun HistoryRow(log: QiyamLog) {
             }
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
-                Text(log.date.toString(), fontWeight = FontWeight.SemiBold)
-                Text("$woke · $prayed", color = Color.Gray)
+                Text(log.date, fontWeight = FontWeight.SemiBold)
+                Text(prayed, color = Color.Gray)
             }
         }
     }

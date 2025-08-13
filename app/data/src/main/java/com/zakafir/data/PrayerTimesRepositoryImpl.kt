@@ -5,6 +5,7 @@ import com.zakafir.domain.PrayerTimesRepository
 import com.zakafir.domain.RemoteDataSource
 import com.zakafir.domain.model.MosqueDetails
 import com.zakafir.domain.model.PrayerTimes
+import com.zakafir.domain.model.QiyamLog
 import com.zakafir.domain.model.QiyamMode
 import com.zakafir.domain.model.QiyamWindow
 import com.zakafir.domain.model.YearlyPrayers
@@ -14,7 +15,10 @@ class PrayerTimesRepositoryImpl(
     private val remoteDataSource: RemoteDataSource
 ) : PrayerTimesRepository {
 
-    override suspend fun getPrayersTime(masjidId: String, displayedMasjidName: String): Result<YearlyPrayers> {
+    override suspend fun getPrayersTime(
+        masjidId: String,
+        displayedMasjidName: String
+    ): Result<YearlyPrayers> {
         // 1) Try local first
         localDataSource.readYearlyPrayers(masjidId)?.let { return Result.success(it) }
 
@@ -83,14 +87,35 @@ class PrayerTimesRepositoryImpl(
         localDataSource.updateCommuteFromMin(it)
     }
 
-    override fun setDesiredSleepMinutes(minutes: Int) = localDataSource.setDesiredSleepMinutes(minutes)
-    override fun setPostFajrBufferMin(minutes: Int)   = localDataSource.setPostFajrBufferMin(minutes)
-    override fun setIshaBufferMin(minutes: Int)       = localDataSource.setIshaBufferMin(minutes)
-    override fun setMinNightStart(hhmm: String)       = localDataSource.setMinNightStart(hhmm)
-    override fun setDisallowPostFajrIfFajrAfter(hhmm: String) = localDataSource.setDisallowPostFajrIfFajrAfter(hhmm)
-    override fun setLatestMorningEnd(hhmm: String)    = localDataSource.setLatestMorningEnd(hhmm)
+    override fun setDesiredSleepMinutes(minutes: Int) =
+        localDataSource.setDesiredSleepMinutes(minutes)
 
-    override fun setCommuteFromMin(minutes: Int)      = localDataSource.setCommuteFromMin(minutes)
+    override fun setPostFajrBufferMin(minutes: Int) = localDataSource.setPostFajrBufferMin(minutes)
+    override fun setIshaBufferMin(minutes: Int) = localDataSource.setIshaBufferMin(minutes)
+    override fun setMinNightStart(hhmm: String) = localDataSource.setMinNightStart(hhmm)
+    override fun setDisallowPostFajrIfFajrAfter(hhmm: String) =
+        localDataSource.setDisallowPostFajrIfFajrAfter(hhmm)
 
-    override fun setNapsSerialized(serialized: String)= localDataSource.setNapsSerialized(serialized)
+    override fun setLatestMorningEnd(hhmm: String) = localDataSource.setLatestMorningEnd(hhmm)
+
+    override fun setCommuteFromMin(minutes: Int) = localDataSource.setCommuteFromMin(minutes)
+
+    override fun setNapsSerialized(serialized: String) =
+        localDataSource.setNapsSerialized(serialized)
+
+    override fun logQiyam(date: String, prayed: Boolean) {
+        localDataSource.logQiyam(date, prayed)
+    }
+
+    override fun getCurrentStreak(): Int {
+        return localDataSource.getCurrentStreak()
+    }
+
+    override fun getQiyamStatusForDate(date: String): Boolean {
+        return localDataSource.getQiyamHistory().find { it.date == date }?.prayed ?: false
+    }
+
+    override fun getQiyamHistory(): List<QiyamLog> {
+        return localDataSource.getQiyamHistory()
+    }
 }
