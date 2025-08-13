@@ -35,6 +35,12 @@ import kotlin.math.roundToInt
 
 private const val MIN_NAPS = 0
 
+/**
+todo 1: store settings in the sharedPref
+todo 2: take into accound maghrib and icha times, if they are too late, warn the user to take naps in that time
+todo 3: the sleeping time starts after praying icha,
+todo 4: if the icha time is too early, give the user the possibility to configure the prefered time to go to sleep, so that he could sleep from the configured time till the start of Qiyam
+ */
 @Composable
 fun SettingsScreen(
     onBufferChange: (Int) -> Unit,
