@@ -16,4 +16,7 @@ interface LocalDataSource {
 
     fun getLastSelectedMasjidId(): String?
     fun saveLastSelectedMasjidId(masjidId: String)
+    fun enableNaps(enabled: Boolean)
+    fun enablePostFajr(enabled: Boolean)
+    fun enableIshaBuffer(enabled: Boolean)
 }

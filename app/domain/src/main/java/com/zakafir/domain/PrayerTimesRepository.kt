@@ -11,4 +11,7 @@ interface PrayerTimesRepository {
     suspend fun searchMosques(word: String): List<Pair<String?, String?>>
     suspend fun getLastSelectedMasjidId(): String?
     suspend fun saveLastSelectedMasjidId(masjidId: String)
+    fun enableNaps(enabled: Boolean)
+    fun enablePostFajr(enabled: Boolean)
+    fun enableIshaBuffer(enabled: Boolean)
 }

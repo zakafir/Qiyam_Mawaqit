@@ -31,6 +31,8 @@ import com.zakafir.presentation.component.TimePickerField
 import java.util.Locale
 import kotlin.collections.plus
 import kotlin.math.roundToInt
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 
 
 private const val MIN_NAPS = 0
@@ -40,11 +42,10 @@ todo 1: store settings in the sharedPref
 todo 2: take into accound maghrib and icha times, if they are too late, warn the user to take naps in that time
 todo 3: the sleeping time starts after praying icha,
 todo 4: if the icha time is too early, give the user the possibility to configure the prefered time to go to sleep, so that he could sleep from the configured time till the start of Qiyam
+todo 5: let the user enable and disable settings if needed
  */
 @Composable
 fun SettingsScreen(
-    onBufferChange: (Int) -> Unit,
-    onGoalChange: (Int) -> Unit,
     ui: PrayerUiState,
     onLatestMorningEndChange: (String) -> Unit,
     onDesiredSleepHoursChange: (Float) -> Unit,
@@ -55,6 +56,9 @@ fun SettingsScreen(
     onUpdateNap: (index: Int, config: NapConfig) -> Unit,
     onAddNap: () -> Unit,
     onRemoveNap: (index: Int) -> Unit,
+    onEnableIshaBufferChange: (Boolean) -> Unit,
+    onEnablePostFajrChange: (Boolean) -> Unit,
+    onEnableNapsChange: (Boolean) -> Unit,
 ) {
     val scrollState = rememberScrollState()
     Column(
@@ -77,6 +81,29 @@ fun SettingsScreen(
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text("Enable Isha buffer")
+            Switch(
+                checked = ui.enableIshaBuffer,
+                onCheckedChange = onEnableIshaBufferChange,
+                colors = SwitchDefaults.colors()
+            )
+        }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text("Enable post‑Fajr sleep")
+            Switch(
+                checked = ui.enablePostFajr,
+                onCheckedChange = onEnablePostFajrChange
+            )
+        }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text("Enable naps")
+            Switch(
+                checked = ui.enableNaps,
+                onCheckedChange = onEnableNapsChange
+            )
+        }
+
         // Desired sleep (15-minute steps)
         val desiredSleepMin = (ui.desiredSleepHours * 60f).toInt()
         Text(text = "Desired sleep — ${formatHm(desiredSleepMin)}")
@@ -95,36 +122,46 @@ fun SettingsScreen(
         )
 
         // Post‑Fajr buffer
-        Text(text = "Post‑Fajr buffer — ${ui.postFajrBufferMin} min")
-        Text(
-            text = "Time to stay awake after praying Fajr before any post‑Fajr sleep is allowed.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Slider(
-            value = ui.postFajrBufferMin.toFloat(),
-            onValueChange = { onPostFajrBufferMinChange(it.toInt()) },
-            valueRange = 0f..120f
-        )
+        if (ui.enablePostFajr) {
+            Text(text = "Post‑Fajr buffer — ${ui.postFajrBufferMin} min")
+            Text(
+                text = "Time to stay awake after praying Fajr before any post‑Fajr sleep is allowed.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Slider(
+                value = ui.postFajrBufferMin.toFloat(),
+                onValueChange = {
+                    val v = it.toInt()
+                    onPostFajrBufferMinChange(v)
+                },
+                valueRange = 0f..120f
+            )
+        }
 
         // Isha buffer
-        Text(text = "Isha buffer — ${ui.ishaBufferMin} min")
-        Text(
-            text = "Wind‑down time after Isha before you are allowed to start night sleep.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Slider(
-            value = ui.ishaBufferMin.toFloat(),
-            onValueChange = { onIshaBufferMinChange(it.toInt()) },
-            valueRange = 0f..120f
-        )
+        if (ui.enableIshaBuffer) {
+            Text(text = "Isha buffer — ${ui.ishaBufferMin} min")
+            Text(
+                text = "Wind‑down time after Isha before you are allowed to start night sleep.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Slider(
+                value = ui.ishaBufferMin.toFloat(),
+                onValueChange = {
+                    val v = it.toInt()
+                    onIshaBufferMinChange(v)
+                },
+                valueRange = 0f..120f
+            )
+        }
 
         // Preferred bedtime (not before)
         TimePickerField(
             label = "Preferred bedtime (not before)",
             value = ui.minNightStart,
-            onValueChange = onMinNightStartChange
+            onValueChange = { onMinNightStartChange(it) }
         )
         Text(
             text = "You prefer to go to bed at this time (e.g., 22:00) or later. • If Isha is earlier than this, you still wait until this time. • If Isha is later than this, the planner may schedule a short nap before Isha and wake you up for prayer.",
@@ -136,7 +173,7 @@ fun SettingsScreen(
         TimePickerField(
             label = "Disable post‑Fajr sleep if Fajr after",
             value = ui.disallowPostFajrIfFajrAfter,
-            onValueChange = onDisallowPostFajrIfFajrAfterChange
+            onValueChange = { onDisallowPostFajrIfFajrAfterChange(it) }
         )
         Text(
             text = "If tomorrow's Fajr is later than this time, the planner will skip the post‑Fajr sleep block.",
@@ -148,7 +185,7 @@ fun SettingsScreen(
         TimePickerField(
             label = "Latest post‑Fajr end",
             value = ui.latestMorningEnd,
-            onValueChange = onLatestMorningEndChange
+            onValueChange = { onLatestMorningEndChange(it) }
         )
         Text(
             text = "Cut‑off time for any post‑Fajr sleep. The planner won't schedule sleep after this time.",
@@ -164,39 +201,47 @@ fun SettingsScreen(
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
-        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            ui.naps.forEachIndexed { idx, nap ->
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(text = "Nap ${idx + 1}", style = MaterialTheme.typography.bodyMedium)
-                    val canRemove = ui.naps.size > MIN_NAPS
-                    TextButton(
-                        onClick = { if (canRemove) onRemoveNap(idx) },
-                        enabled = canRemove
-                    ) { Text("Remove") }
+        if (ui.enableNaps) {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                ui.naps.forEachIndexed { idx, nap ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(text = "Nap ${idx + 1}", style = MaterialTheme.typography.bodyMedium)
+                        val canRemove = ui.naps.size > MIN_NAPS
+                        TextButton(
+                            onClick = { if (canRemove) onRemoveNap(idx) },
+                            enabled = canRemove
+                        ) { Text("Remove") }
+                    }
+                    TimePickerField(
+                        label = "Start time",
+                        value = nap.start,
+                        onValueChange = { onUpdateNap(idx, nap.copy(start = it)) }
+                    )
+                    Text(text = "Duration — ${nap.durationMin} min")
+                    Slider(
+                        value = nap.durationMin.toFloat(),
+                        onValueChange = { onUpdateNap(idx, nap.copy(durationMin = it.toInt())) },
+                        valueRange = 10f..120f
+                    )
                 }
-                TimePickerField(
-                    label = "Start time",
-                    value = nap.start,
-                    onValueChange = { onUpdateNap(idx, nap.copy(start = it)) }
-                )
-                Text(text = "Duration — ${nap.durationMin} min")
-                Slider(
-                    value = nap.durationMin.toFloat(),
-                    onValueChange = { onUpdateNap(idx, nap.copy(durationMin = it.toInt())) },
-                    valueRange = 10f..120f
-                )
-            }
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                val addLabel = when (ui.naps.size) {
-                    0 -> "Add midday nap"
-                    1 -> "Add evening nap"
-                    else -> "Add nap"
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                    val addLabel = when (ui.naps.size) {
+                        0 -> "Add midday nap"
+                        1 -> "Add evening nap"
+                        else -> "Add nap"
+                    }
+                    Button(onClick = onAddNap) { Text(addLabel) }
                 }
-                Button(onClick = onAddNap) { Text(addLabel) }
             }
+        } else {
+            Text(
+                text = "Naps are disabled.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
 
         val qiyamStart = ui.qiyamUiState?.window?.start
@@ -204,6 +249,24 @@ fun SettingsScreen(
         val todayMaghrib = ui.yearlyPrayers?.prayerTimes?.getOrNull(0)?.maghreb
         val tomorrowFajr = ui.yearlyPrayers?.prayerTimes?.getOrNull(1)?.fajr
         val tomorrowDhuhr = ui.yearlyPrayers?.prayerTimes?.getOrNull(1)?.dohr
+
+        // Warnings if Maghrib/Isha are late relative to preferred bedtime
+        val ishaLateMinutes = if (todayIsha != null) compareHm(todayIsha, ui.minNightStart) else 0
+        val maghribLate = (todayMaghrib != null) && compareHm(todayMaghrib, "22:00") >= 0
+        if (todayIsha != null && ishaLateMinutes > 60) {
+            Text(
+                text = "Isha is significantly later than your preferred bedtime (>${'$'}{ishaLateMinutes} min). Consider a short pre‑Isha nap.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error
+            )
+        }
+        if (maghribLate) {
+            Text(
+                text = "Maghrib is late tonight. Plan your evening wind‑down accordingly.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error
+            )
+        }
 
         Divider()
         Text(text = "Sleep plan preview", style = MaterialTheme.typography.titleMedium)
@@ -220,11 +283,11 @@ fun SettingsScreen(
             qiyamStart = qiyamStart,
             fajr = tomorrowFajr,
             dhuhr = tomorrowDhuhr,
-            allowPostFajr = ui.allowPostFajr,
+            allowPostFajr = ui.allowPostFajr && ui.enablePostFajr,
             latestMorningEnd = ui.latestMorningEnd,
-            postFajrBufferMin = ui.postFajrBufferMin,
-            ishaBufferMin = ui.ishaBufferMin,
-            naps = ui.naps,
+            postFajrBufferMin = if (ui.enablePostFajr) ui.postFajrBufferMin else 0,
+            ishaBufferMin = if (ui.enableIshaBuffer) ui.ishaBufferMin else 0,
+            naps = if (ui.enableNaps) ui.naps else emptyList(),
             minNightStart = ui.minNightStart,
             disallowPostFajrIfFajrAfter = ui.disallowPostFajrIfFajrAfter
         )
@@ -406,8 +469,6 @@ private fun PreviewSettings() {
         mutableStateOf(listOf(NapConfig(start = "12:00", durationMin = 60)))
     }
     SettingsScreen(
-        onBufferChange = {},
-        onGoalChange = {},
         ui = PrayerUiState(
             postFajrBufferMin = 30,
             ishaBufferMin = 10,
@@ -429,7 +490,18 @@ private fun PreviewSettings() {
         onRemoveNap = { idx ->
             setNaps(naps.toMutableList().apply { removeAt(idx) })
         },
-        onLatestMorningEndChange = {}
+        onLatestMorningEndChange = {
+
+        },
+        onEnableIshaBufferChange = {
+
+        },
+        onEnablePostFajrChange = {
+
+        },
+        onEnableNapsChange = {
+
+        },
     )
 }
 

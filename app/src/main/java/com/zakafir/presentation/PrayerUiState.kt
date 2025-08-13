@@ -7,6 +7,9 @@ import com.zakafir.presentation.screen.NapConfig
 
 data class PrayerUiState(
     val masjidId: String = "",
+    val enableIshaBuffer: Boolean = false,
+    val enablePostFajr: Boolean = false,
+    val enableNaps: Boolean = false,
     val yearlyPrayers: YearlyPrayers? = null,
     val qiyamUiState: QiyamUiState? = null,
     val isLoading: Boolean = false,

@@ -120,4 +120,16 @@ class LocalDataSourceImpl(
     override fun saveLastSelectedMasjidId(masjidId: String) {
         prefs.edit { putString("selected_masjid_id", masjidId) }
     }
+
+    override fun enableNaps(enabled: Boolean) {
+        prefs.edit { putBoolean("enable_naps", enabled) }
+    }
+
+    override fun enablePostFajr(enabled: Boolean) {
+        prefs.edit { putBoolean("enable_post_fajr", enabled) }
+    }
+
+    override fun enableIshaBuffer(enabled: Boolean) {
+        prefs.edit { putBoolean("enable_isha_buffer", enabled) }
+    }
 }

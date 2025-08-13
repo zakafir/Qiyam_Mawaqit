@@ -189,21 +189,6 @@ class PrayerTimesViewModel(
         )
     }
 
-    fun updateBuffer(v: Int) {
-        _uiState.update { it.copy(bufferMinutes = v.coerceIn(0, 120),) }
-        recomputeQiyamUiFromState()
-    }
-
-    private fun recomputeQiyamUiFromState() {
-        val current = _uiState.value
-        val win = current.qiyamUiState?.window
-        val mode = current.qiyamUiState?.mode ?: selectedQiyamMode
-        val updated = if (win != null) {
-            current.copy(qiyamUiState = convertToQiyamUi(win, mode = mode, bufferMinutes = current.bufferMinutes))
-        } else current
-        _uiState.value = updated
-    }
-
     fun updateDesiredSleepHours(v: Float) {
         _uiState.update { it.copy(desiredSleepHours = v.coerceIn(4f, 12f),) }
     }
@@ -214,10 +199,6 @@ class PrayerTimesViewModel(
 
     fun updateIshaBuffer(v: Int) {
         _uiState.update { it.copy(ishaBufferMin = v.coerceIn(0, 120),) }
-    }
-
-    fun updateWeeklyGoal(v: Int) {
-        _uiState.update { it.copy(weeklyGoal = v.coerceIn(0, 7),) }
     }
 
     fun updateMinNightStart(v: String) {
@@ -320,4 +301,19 @@ class PrayerTimesViewModel(
             }
         }
     }
+
+fun enableNaps(enabled: Boolean) {
+    _uiState.update { s -> s.copy(enableNaps = enabled) }
+    viewModelScope.launch { runCatching { repo.enableNaps(enabled) } }
+}
+
+fun enablePostFajr(enabled: Boolean) {
+    _uiState.update { s -> s.copy(enablePostFajr = enabled) }
+    viewModelScope.launch { runCatching { repo.enablePostFajr(enabled) } }
+}
+
+fun enableIshaBuffer(enabled: Boolean) {
+    _uiState.update { s -> s.copy(enableIshaBuffer = enabled) }
+    viewModelScope.launch { runCatching { repo.enableIshaBuffer(enabled) } }
+}
 }

@@ -53,4 +53,16 @@ class PrayerTimesRepositoryImpl(
     override suspend fun saveLastSelectedMasjidId(masjidId: String) {
         localDataSource.saveLastSelectedMasjidId(masjidId)
     }
+
+    override fun enableNaps(enabled: Boolean) {
+        localDataSource.enableNaps(enabled)
+    }
+
+    override fun enablePostFajr(enabled: Boolean) {
+        localDataSource.enablePostFajr(enabled)
+    }
+
+    override fun enableIshaBuffer(enabled: Boolean) {
+        localDataSource.enableIshaBuffer(enabled)
+    }
 }

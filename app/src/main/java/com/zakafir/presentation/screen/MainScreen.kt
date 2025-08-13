@@ -92,9 +92,6 @@ fun QiyamApp(
                 val vmState = sharedViewModel.uiState.collectAsState().value
 
                 SettingsScreen(
-                    onBufferChange = { sharedViewModel.updateBuffer(it) },
-                    onGoalChange = { sharedViewModel.updateWeeklyGoal(it) },
-
                     ui = vmState, // if you refactored SettingsScreen to take the PrayerUiState
 
                     onDesiredSleepHoursChange = { sharedViewModel.updateDesiredSleepHours(it) },
@@ -106,7 +103,16 @@ fun QiyamApp(
                     onUpdateNap = { index, config -> sharedViewModel.updateNap(index, config) },
                     onAddNap = { sharedViewModel.addNap() },
                     onRemoveNap = { index -> sharedViewModel.removeNap(index) },
-                    onLatestMorningEndChange = { sharedViewModel.updateLatestMorningEnd(it) }
+                    onLatestMorningEndChange = { sharedViewModel.updateLatestMorningEnd(it) },
+                    onEnableNapsChange = {
+                        sharedViewModel.enableNaps(it)
+                    },
+                    onEnablePostFajrChange = {
+                        sharedViewModel.enablePostFajr(it)
+                    },
+                    onEnableIshaBufferChange = {
+                        sharedViewModel.enableIshaBuffer(it)
+                    },
                 )
             }
         }
