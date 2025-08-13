@@ -3,6 +3,7 @@ package com.zakafir.data
 import com.zakafir.domain.LocalDataSource
 import com.zakafir.domain.PrayerTimesRepository
 import com.zakafir.domain.RemoteDataSource
+import com.zakafir.domain.model.PrayerTimes
 import com.zakafir.domain.model.QiyamWindow
 import com.zakafir.domain.model.YearlyPrayers
 
@@ -28,8 +29,11 @@ class PrayerTimesRepositoryImpl(
         return remote
     }
 
-    override suspend fun computeQiyamWindow(masjidId: String): Result<QiyamWindow> {
-        TODO("Not yet implemented")
+    override suspend fun computeQiyamWindow(
+        todaysPrayerTimes: PrayerTimes?,
+        tommorowsPrayerTimes: PrayerTimes?
+    ): Result<QiyamWindow> {
+        return localDataSource.computeQiyamWindow(todaysPrayerTimes, tommorowsPrayerTimes)
     }
 
     override suspend fun searchMosques(word: String): List<Pair<String?, String?>> {

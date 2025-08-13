@@ -31,6 +31,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.unit.dp
+import com.zakafir.domain.model.PrayerTimes
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
@@ -115,7 +116,8 @@ fun HomeScreen(
     onSchedule: (LocalDateTime) -> Unit,
     onTestAlarmUi: () -> Unit,
     onOpenSettings: () -> Unit,
-    onSelectMasjidSuggestion: (String?) -> Unit
+    onSelectMasjidSuggestion: (String?) -> Unit,
+    onComputeQiyam: (PrayerTimes?, PrayerTimes?) -> Unit,
 ) {
 
     LazyColumn(
@@ -160,6 +162,7 @@ fun HomeScreen(
 
                     val today = list.getOrNull(todayIndex)
                     val tomorrow = list.getOrNull(todayIndex + 1)
+                    onComputeQiyam(today, tomorrow)
 
                     today?.let {
                         SectionTitle("Today's prayers")

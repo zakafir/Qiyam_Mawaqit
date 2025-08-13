@@ -3,6 +3,7 @@ package com.zakafir.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.zakafir.domain.PrayerTimesRepository
+import com.zakafir.domain.model.PrayerTimes
 import com.zakafir.domain.model.QiyamWindow
 import com.zakafir.presentation.screen.NapConfig
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -83,26 +84,51 @@ class PrayerTimesViewModel(
                     // Null out prayers on failure so UI shows nothing
                     newState = newState.copy(error = e.message ?: "Unknown error",)
                 }
+            // stop loading
+            _uiState.value = newState.copy()
+        }
+    }
 
-            // 2) Compute Qiyam window as Result
+    fun computeQiyamWindow(
+        todaysPrayerTimes: PrayerTimes?,
+        tommorowsPrayerTimes: PrayerTimes?
+    ) {
+        viewModelScope.launch {
+            // Fast path for missing inputs
+            if (todaysPrayerTimes == null || tommorowsPrayerTimes == null) {
+                _uiState.update { s ->
+                    s.copy(
+                        qiyamWindow = null,
+                        qiyamUiState = null,
+                        error = "Missing prayer times for today or tomorrow."
+                    )
+                }
+                return@launch
+            }
+
+            // Compute Qiyam window
             val qiyamResult = try {
-                repo.computeQiyamWindow(currentMasjidId)
+                repo.computeQiyamWindow(todaysPrayerTimes, tommorowsPrayerTimes)
             } catch (t: Throwable) {
                 Result.failure(t)
             }
 
             qiyamResult
                 .onSuccess { qiyam ->
-                    val ui = convertToQiyamUi(qiyam, bufferMinutes = newState.bufferMinutes)
-                    newState = newState.copy(qiyamWindow = qiyam, qiyamUiState = ui,)
+                    _uiState.update { s ->
+                        val ui = convertToQiyamUi(qiyam, bufferMinutes = s.bufferMinutes)
+                        s.copy(qiyamWindow = qiyam, qiyamUiState = ui, error = null)
+                    }
                 }
                 .onFailure { e ->
-                    // Null out Qiyam data on failure so UI shows nothing
-                    newState = newState.copy(error = newState.error ?: (e.message ?: "Unknown error"),)
+                    _uiState.update { s ->
+                        s.copy(
+                            qiyamWindow = null,
+                            qiyamUiState = null,
+                            error = e.message ?: "Failed to compute Qiyam window."
+                        )
+                    }
                 }
-
-            // stop loading
-            _uiState.value = newState.copy()
         }
     }
 
@@ -237,6 +263,12 @@ class PrayerTimesViewModel(
     }
 
     fun updateMasjidId(v: String) {
+        if (v.isBlank()) {
+            // Reset everything to initial state and stop showing any data
+            _uiState.value = PrayerUiState()
+            _masjidQuery.value = ""
+            return
+        }
         _uiState.update { it.copy(masjidId = v,) }
         _masjidQuery.value = v
     }
