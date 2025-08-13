@@ -64,7 +64,8 @@ fun QiyamApp(
                     onSelectMasjidSuggestion = { sharedViewModel.selectMasjidSuggestion(it) },
                     onComputeQiyam = { today, tomorrow ->
                         sharedViewModel.computeQiyamWindow(today, tomorrow)
-                    }
+                    },
+                    onModeChange = { sharedViewModel.updateQiyamMode(it) }
                 )
             }
             composable(Screen.Wake.route) {

@@ -38,38 +38,9 @@ fun StreakHeader(streak: Int, weeklyGoal: Int) {
     }
 }
 
-
-// ---------- Time helpers (UI formatting) ----------
-
-@Composable
-fun timeRange(start: LocalDateTime, end: LocalDateTime): String =
-    "${timeOnly(start)} – ${timeOnly(end)}"
-
 @Composable
 fun timeOnly(dt: LocalDateTime): String {
     val h = dt.hour.toString().padStart(2, '0')
     val m = dt.minute.toString().padStart(2, '0')
     return "$h:$m"
-}
-
-// ---------- Preview data ----------
-
-fun demoState(): QiyamUiState {
-    val tz = TimeZone.currentSystemDefault()
-    val today = Clock.System.now().toLocalDateTime(tz).date
-    val start = LocalDateTime(
-        year = today.year,
-        monthNumber = today.monthNumber,
-        dayOfMonth = today.dayOfMonth,
-        hour = 0,
-        minute = 4,
-        second = 0
-    )
-    val end = LocalDateTime(today.year, today.monthNumber, today.dayOfMonth, 0, 5, 10)
-    val suggested = LocalDateTime(today.year, today.monthNumber, today.dayOfMonth, 0, 4, 40)
-    return QiyamUiState(
-        start = start,
-        end = end,
-        suggestedWake = suggested
-    )
 }

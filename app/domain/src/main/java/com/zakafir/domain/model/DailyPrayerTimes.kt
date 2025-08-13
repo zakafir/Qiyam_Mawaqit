@@ -16,3 +16,11 @@ data class YearlyPrayers(
 )
 
 data class QiyamWindow(val start: String, val end: String)
+
+sealed class QiyamMode {
+    data object LastThird : QiyamMode()
+    data object Dawud : QiyamMode()
+    data object AfterIsha : QiyamMode()
+    data object LastHalf : QiyamMode()
+
+}

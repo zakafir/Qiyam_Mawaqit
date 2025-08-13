@@ -1,5 +1,6 @@
 package com.zakafir.presentation
 
+import com.zakafir.domain.model.QiyamMode
 import com.zakafir.domain.model.QiyamWindow
 import com.zakafir.domain.model.YearlyPrayers
 import com.zakafir.presentation.screen.NapConfig
@@ -7,7 +8,6 @@ import com.zakafir.presentation.screen.NapConfig
 data class PrayerUiState(
     val masjidId: String = "",
     val yearlyPrayers: YearlyPrayers? = null,
-    val qiyamWindow: QiyamWindow? = null,
     val qiyamUiState: QiyamUiState? = null,
     val isLoading: Boolean = false,
     val error: String? = null,

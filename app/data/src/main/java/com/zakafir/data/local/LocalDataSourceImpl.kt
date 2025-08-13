@@ -14,6 +14,8 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.decodeFromString
 import androidx.core.content.edit
+import com.zakafir.domain.model.QiyamMode
+
 
 class LocalDataSourceImpl(
     private val context: Context,
@@ -43,6 +45,7 @@ class LocalDataSourceImpl(
     }
 
     override fun computeQiyamWindow(
+        mode: QiyamMode,
         todaysPrayerTimes: PrayerTimes?,
         tommorowsPrayerTimes: PrayerTimes?
     ): Result<QiyamWindow> {
@@ -75,12 +78,33 @@ class LocalDataSourceImpl(
             val nightLength = fajrTomorrowAbs - maghribToday
             require(nightLength > 0) { "Non-positive night length computed." }
 
-            // Qiyam = last third of the night (conventional fiqh approximation)
-            val lastThirdStartAbs = fajrTomorrowAbs - (nightLength / 3)
-
-            // Do not start before Isha
-            val startAbs = maxOf(lastThirdStartAbs, ishaToday)
-            val endAbs = fajrTomorrowAbs
+            val (startAbs, endAbs) = when (mode) {
+                is QiyamMode.AfterIsha -> {
+                    val s = ishaToday
+                    val e = fajrTomorrowAbs
+                    s to e
+                }
+                is QiyamMode.LastHalf -> {
+                    val half = maghribToday + (nightLength / 2)
+                    val s = maxOf(half, ishaToday) // never before Isha
+                    val e = fajrTomorrowAbs
+                    s to e
+                }
+                is QiyamMode.LastThird -> {
+                    val lastThirdStartAbs = fajrTomorrowAbs - (nightLength / 3)
+                    val s = maxOf(lastThirdStartAbs, ishaToday) // never before Isha
+                    val e = fajrTomorrowAbs
+                    s to e
+                }
+                is QiyamMode.Dawud -> {
+                    // Dawud: middle third of the night (4th–5th sixths): [Maghrib + 1/2 L, Maghrib + 5/6 L], then clamp to [Isha, Fajr].
+                    val half = maghribToday + (nightLength / 2)
+                    val fiveSixths = maghribToday + (nightLength * 5) / 6
+                    val s = maxOf(half, ishaToday)
+                    val e = minOf(fiveSixths, fajrTomorrowAbs)
+                    s to e
+                }
+            }
 
             QiyamWindow(
                 start = formatMinutes(startAbs),

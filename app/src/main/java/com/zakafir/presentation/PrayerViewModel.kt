@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.zakafir.domain.PrayerTimesRepository
 import com.zakafir.domain.model.PrayerTimes
+import com.zakafir.domain.model.QiyamMode
 import com.zakafir.domain.model.QiyamWindow
 import com.zakafir.presentation.screen.NapConfig
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -31,6 +32,14 @@ class PrayerTimesViewModel(
     private val _uiState = MutableStateFlow(PrayerUiState())
     val uiState: StateFlow<PrayerUiState> = _uiState.asStateFlow()
     private val _masjidQuery = MutableStateFlow("")
+
+    // Cache the last inputs used for Qiyam computation so we can recompute when mode changes
+    private var lastTodays: PrayerTimes? = null
+    private var lastTomorrows: PrayerTimes? = null
+
+    // Selected Qiyam mode lives in the UI state inside QiyamUiState, but we keep a local
+    // fallback for when there is no QiyamUiState yet (first computation)
+    private var selectedQiyamMode: QiyamMode = QiyamMode.LastThird
 
     init {
         viewModelScope.launch {
@@ -100,11 +109,14 @@ class PrayerTimesViewModel(
         tommorowsPrayerTimes: PrayerTimes?
     ) {
         viewModelScope.launch {
+            // Cache inputs for later recomputation when mode changes
+            lastTodays = todaysPrayerTimes
+            lastTomorrows = tommorowsPrayerTimes
+
             // Fast path for missing inputs
             if (todaysPrayerTimes == null || tommorowsPrayerTimes == null) {
                 _uiState.update { s ->
                     s.copy(
-                        qiyamWindow = null,
                         qiyamUiState = null,
                         error = "Missing prayer times for today or tomorrow."
                     )
@@ -112,9 +124,11 @@ class PrayerTimesViewModel(
                 return@launch
             }
 
-            // Compute Qiyam window
+            val mode = _uiState.value.qiyamUiState?.mode ?: selectedQiyamMode
+
+            // Compute Qiyam window with the selected mode
             val qiyamResult = try {
-                repo.computeQiyamWindow(todaysPrayerTimes, tommorowsPrayerTimes)
+                repo.computeQiyamWindow(mode, todaysPrayerTimes, tommorowsPrayerTimes)
             } catch (t: Throwable) {
                 Result.failure(t)
             }
@@ -122,71 +136,57 @@ class PrayerTimesViewModel(
             qiyamResult
                 .onSuccess { qiyam ->
                     _uiState.update { s ->
-                        val ui = convertToQiyamUi(qiyam, bufferMinutes = s.bufferMinutes)
-                        s.copy(qiyamWindow = qiyam, qiyamUiState = ui, error = null)
+                        val ui = convertToQiyamUi(qiyam, mode = mode, bufferMinutes = s.bufferMinutes)
+                        s.copy(qiyamUiState = ui, error = null)
                     }
                 }
                 .onFailure { e ->
                     _uiState.update { s ->
-                        s.copy(
-                            qiyamWindow = null,
-                            qiyamUiState = null,
-                            error = e.message ?: "Failed to compute Qiyam window."
-                        )
+                        s.copy(qiyamUiState = null, error = e.message ?: "Failed to compute Qiyam window.")
                     }
                 }
         }
     }
 
-    private fun convertToQiyamUi(qiyam: QiyamWindow, bufferMinutes: Int): QiyamUiState {
-        val today: LocalDate =
-            Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
+    private fun convertToQiyamUi(qiyam: QiyamWindow, mode: QiyamMode, bufferMinutes: Int): QiyamUiState {
+        val today: LocalDate = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
+
+        fun parseHourMinute(timeStr: String): Pair<Int, Int> {
+            val parts = timeStr.split(":")
+            val hour = parts.getOrNull(0)?.toIntOrNull() ?: 0
+            val minute = parts.getOrNull(1)?.toIntOrNull() ?: 0
+            return hour to minute
+        }
 
         val (startHour, startMinute) = parseHourMinute(qiyam.start)
-        val startDateTime = LocalDateTime(
-            year = today.year,
-            monthNumber = today.monthNumber,
-            dayOfMonth = today.dayOfMonth,
-            hour = startHour,
-            minute = startMinute,
-            second = 0,
-            nanosecond = 0
-        )
+        val startDateTime = LocalDateTime(today.year, today.monthNumber, today.dayOfMonth, startHour, startMinute, 0, 0)
 
         val (endHour, endMinute) = parseHourMinute(qiyam.end)
-        // Build endCandidate on the same day
-        var endCandidate = LocalDateTime(
-            year = today.year,
-            monthNumber = today.monthNumber,
-            dayOfMonth = today.dayOfMonth,
-            hour = endHour,
-            minute = endMinute,
-            second = 0,
-            nanosecond = 0
-        )
+        var endCandidate = LocalDateTime(today.year, today.monthNumber, today.dayOfMonth, endHour, endMinute, 0, 0)
+
         val tz = TimeZone.currentSystemDefault()
         val startInstant = startDateTime.toInstant(tz)
         var endInstant = endCandidate.toInstant(tz)
-        if (endInstant <= startInstant) {
-            endInstant = endInstant.plus(1.days)
-        }
+        if (endInstant <= startInstant) endInstant = endInstant.plus(1.days)
         val endDateTime = endInstant.toLocalDateTime(tz)
 
-        val suggestedWake =
-            startDateTime.toInstant(tz).minus(bufferMinutes.minutes).toLocalDateTime(tz)
+        // Suggested wake = a few minutes before the start (buffer)
+        val suggestedWake = startInstant.minus(bufferMinutes.minutes).toLocalDateTime(tz)
+
+        // Duration as string (handles overnight)
+        val durationMinutes = ((endInstant.epochSeconds - startInstant.epochSeconds) / 60).toInt()
+        val durH = durationMinutes / 60
+        val durM = durationMinutes % 60
+        val durationStr = String.format("%dh %02dm", durH, durM)
 
         return QiyamUiState(
-            start = startDateTime,
-            end = endDateTime,
-            suggestedWake = suggestedWake
+            start = qiyam.start,
+            end = qiyam.end,
+            duration = durationStr,
+            mode = mode,
+            window = qiyam,
+            suggestedWake = suggestedWake,
         )
-    }
-
-    private fun parseHourMinute(timeStr: String): Pair<Int, Int> {
-        val parts = timeStr.split(":")
-        val hour = parts.getOrNull(0)?.toIntOrNull() ?: 0
-        val minute = parts.getOrNull(1)?.toIntOrNull() ?: 0
-        return hour to minute
     }
 
     fun updateBuffer(v: Int) {
@@ -196,14 +196,11 @@ class PrayerTimesViewModel(
 
     private fun recomputeQiyamUiFromState() {
         val current = _uiState.value
-        val updated = current.copy(
-            qiyamUiState = current.qiyamWindow?.let {
-                convertToQiyamUi(
-                    it,
-                    bufferMinutes = current.bufferMinutes
-                )
-            },
-        )
+        val win = current.qiyamUiState?.window
+        val mode = current.qiyamUiState?.mode ?: selectedQiyamMode
+        val updated = if (win != null) {
+            current.copy(qiyamUiState = convertToQiyamUi(win, mode = mode, bufferMinutes = current.bufferMinutes))
+        } else current
         _uiState.value = updated
     }
 
@@ -293,5 +290,34 @@ class PrayerTimesViewModel(
         viewModelScope.launch { runCatching { repo.saveLastSelectedMasjidId(slug) } }
         // Trigger a full refresh for the new masjid
         refresh()
+    }
+
+    fun updateQiyamMode(it: QiyamMode) {
+        selectedQiyamMode = it
+
+        // Update mode in existing UI state if present
+        _uiState.update { s ->
+            val cur = s.qiyamUiState
+            if (cur != null) s.copy(qiyamUiState = cur.copy(mode = it)) else s
+        }
+
+        // Recompute instantly if we have cached inputs
+        val t = lastTodays
+        val tm = lastTomorrows
+        if (t != null && tm != null) {
+            viewModelScope.launch {
+                val res = try { repo.computeQiyamWindow(it, t, tm) } catch (thr: Throwable) { Result.failure(thr) }
+                res
+                    .onSuccess { q ->
+                        _uiState.update { s ->
+                            val ui = convertToQiyamUi(q, mode = it, bufferMinutes = s.bufferMinutes)
+                            s.copy(qiyamUiState = ui, error = null)
+                        }
+                    }
+                    .onFailure { e ->
+                        _uiState.update { s -> s.copy(qiyamUiState = null, error = e.message) }
+                    }
+            }
+        }
     }
 }

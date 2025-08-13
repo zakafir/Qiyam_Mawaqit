@@ -17,14 +17,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.zakafir.domain.model.QiyamMode
 import com.zakafir.domain.model.QiyamWindow
+import com.zakafir.presentation.QiyamUiState
+import com.zakafir.presentation.screen.QiyamModeSelector
 import kotlinx.datetime.LocalDateTime
 
 @Composable
 fun TonightCard(
-    window: QiyamWindow,
+    qiyamUiState: QiyamUiState,
     onSchedule: (LocalDateTime) -> Unit,
     onTestAlarmUi: () -> Unit,
+    onModeChange: (QiyamMode) -> Unit,
     date: String
 ) {
     Card(
@@ -39,14 +43,24 @@ fun TonightCard(
             )
             Spacer(Modifier.height(4.dp))
 
+            QiyamModeSelector(
+                mode = qiyamUiState.mode,
+                onSelect = {
+                    onModeChange(it)
+                }
+            )
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                StatChip("Qiyam start", window.start)
-                StatChip("Qiyam end", window.end)
+                StatChip("Qiyam start", qiyamUiState.start)
+                StatChip("Qiyam end", qiyamUiState.end)
             }
             Spacer(Modifier.height(4.dp))
+            Text(
+                "Duration: ${qiyamUiState.duration}",
+                style = MaterialTheme.typography.bodyMedium
+            )
+            Spacer(Modifier.height(4.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                // Button(onClick = { onSchedule(window.suggestedWake) }) { Text("Schedule") }
-                OutlinedButton(onClick = onTestAlarmUi) { Text("Test alarm UI") }
+                OutlinedButton(onClick = onTestAlarmUi) { Text("Set alarm to start the Qiyam") }
             }
         }
     }
@@ -56,12 +70,16 @@ fun TonightCard(
 @Composable
 fun TonightCardPreview() {
     TonightCard(
-        window = QiyamWindow(
+        qiyamUiState = QiyamUiState(
             start = "00:00",
-            end = "00:00"
+            end = "00:00",
+            duration = "00:00",
+            mode = QiyamMode.LastThird,
+            suggestedWake = LocalDateTime(2023, 1, 1, 0, 0)
         ),
         onSchedule = {},
         onTestAlarmUi = {},
-        date = "2023-01-01"
+        date = "2023-01-01",
+        onModeChange = {}
     )
 }

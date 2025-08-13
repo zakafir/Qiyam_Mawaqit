@@ -2,8 +2,6 @@ package com.zakafir.presentation.screen
 
 
 import androidx.compose.foundation.clickable
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.Button
 import androidx.compose.material3.OutlinedTextField
 
 import androidx.compose.foundation.horizontalScroll
@@ -18,11 +16,12 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Divider
 import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -33,11 +32,11 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import com.zakafir.domain.model.PrayerTimes
+import com.zakafir.domain.model.QiyamMode
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
-import kotlinx.datetime.DatePeriod
 import com.zakafir.presentation.PrayerUiState
 import com.zakafir.presentation.StreakHeader
 import com.zakafir.presentation.component.HelperCard
@@ -122,6 +121,7 @@ fun HomeScreen(
     onOpenSettings: () -> Unit,
     onSelectMasjidSuggestion: (String?) -> Unit,
     onComputeQiyam: (PrayerTimes?, PrayerTimes?) -> Unit,
+    onModeChange: (QiyamMode) -> Unit
 ) {
 
     LazyColumn(
@@ -226,37 +226,85 @@ fun HomeScreen(
 
         // Section: Qiyam (Tonight)
         item {
-            vmUiState.qiyamWindow?.let { qiyam ->
+            vmUiState.qiyamUiState?.let { qiyamUiState ->
                 vmUiState.yearlyPrayers?.let { prayers ->
                     val list = prayers.prayerTimes
                     val today = list.getOrNull(0)
                     TonightCard(
                         date = today?.date ?: "",
-                        window = qiyam,
+                        qiyamUiState = qiyamUiState,
                         onSchedule = onSchedule,
-                        onTestAlarmUi = onTestAlarmUi
+                        onTestAlarmUi = onTestAlarmUi,
+                        onModeChange = onModeChange
                     )
                 }
             }
         }
 
-        // Section: Sleep Planner
-        item {
-            TextButton(onClick = onOpenSettings) {
-                Text("Adjust sleep settings")
-            }
-        }
-
         // Helper / Education
-        item {
-            HelperCard(
-                title = "What is the last third?",
-                body = "It’s the final third of the night between Maghrib and Fajr. Your wake time sits near the center, minus a small buffer for wuḍūʾ."
-            )
+        vmUiState.qiyamUiState?.mode?.let { mode ->
+            item {
+                val helperBody = when (mode) {
+                    is QiyamMode.AfterIsha -> "From after Isha until Fajr — any time in this window counts as Qiyam."
+                    is QiyamMode.LastHalf -> "The last half of the night between Maghrib and Fajr. Preferred if you can wake up in this period."
+                    is QiyamMode.LastThird -> "The final third of the night between Maghrib and Fajr. Your wake time sits near the center, minus a small buffer for wuḍūʾ."
+                    is QiyamMode.Dawud -> "Following the prayer of Dawud: sleep half the night, pray one third, then sleep one sixth. This covers the 4th and 5th sixths of the night."
+                }
+                HelperCard(
+                    title = "What is the $mode mode?",
+                    body = helperBody
+                )
+            }
         }
     }
 }
 
+
+@Composable
+fun QiyamModeSelector(
+    mode: QiyamMode,
+    onSelect: (QiyamMode) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier.horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        ModeChip(
+            text = "last third",
+            selected = mode is QiyamMode.LastThird,
+            onClick = { onSelect(QiyamMode.LastThird) }
+        )
+        ModeChip(
+            text = "Dawoud",
+            selected = mode is QiyamMode.Dawud,
+            onClick = { onSelect(QiyamMode.Dawud) }
+        )
+        ModeChip(
+            text = "after Isha",
+            selected = mode is QiyamMode.AfterIsha,
+            onClick = { onSelect(QiyamMode.AfterIsha) }
+        )
+        ModeChip(
+            text = "last half",
+            selected = mode is QiyamMode.LastHalf,
+            onClick = { onSelect(QiyamMode.LastHalf) }
+        )
+    }
+}
+
+@Composable
+private fun ModeChip(
+    text: String,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    if (selected) {
+        FilledTonalButton(onClick = onClick) { Text(text) }
+    } else {
+        OutlinedButton(onClick = onClick) { Text(text) }
+    }
+}
 @Composable
 private fun SectionTitle(text: String) {
     Text(text = text, modifier = Modifier.padding(bottom = 4.dp))

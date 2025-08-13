@@ -199,7 +199,7 @@ fun SettingsScreen(
             }
         }
 
-        val qiyamStart = ui.qiyamWindow?.start
+        val qiyamStart = ui.qiyamUiState?.window?.start
         val todayIsha = ui.yearlyPrayers?.prayerTimes?.getOrNull(0)?.icha
         val todayMaghrib = ui.yearlyPrayers?.prayerTimes?.getOrNull(0)?.maghreb
         val tomorrowFajr = ui.yearlyPrayers?.prayerTimes?.getOrNull(1)?.fajr

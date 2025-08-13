@@ -1,6 +1,7 @@
 package com.zakafir.domain
 
 import com.zakafir.domain.model.PrayerTimes
+import com.zakafir.domain.model.QiyamMode
 import com.zakafir.domain.model.QiyamWindow
 import com.zakafir.domain.model.YearlyPrayers
 
@@ -8,6 +9,7 @@ interface LocalDataSource {
     fun readYearlyPrayers(masjidId: String): YearlyPrayers?
     fun writeYearlyPrayers(masjidId: String, yearly: YearlyPrayers)
     fun computeQiyamWindow(
+        mode: QiyamMode,
         todaysPrayerTimes: PrayerTimes?,
         tommorowsPrayerTimes: PrayerTimes?
     ): Result<QiyamWindow>
