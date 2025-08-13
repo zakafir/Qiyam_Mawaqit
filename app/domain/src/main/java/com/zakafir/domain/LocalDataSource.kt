@@ -19,4 +19,23 @@ interface LocalDataSource {
     fun enableNaps(enabled: Boolean)
     fun enablePostFajr(enabled: Boolean)
     fun enableIshaBuffer(enabled: Boolean)
+    fun updateWorkEnd(it: String)
+    fun updateWorkStart(it: String)
+    fun updateCommuteToMin(it: Int)
+    fun updateCommuteFromMin(it: Int)
+
+    // Sleep planner settings persistence
+    fun setDesiredSleepMinutes(minutes: Int)
+    fun setPostFajrBufferMin(minutes: Int)
+    fun setIshaBufferMin(minutes: Int)
+    fun setMinNightStart(hhmm: String)
+    fun setDisallowPostFajrIfFajrAfter(hhmm: String)
+    fun setLatestMorningEnd(hhmm: String)
+
+    // Work & commute
+    fun setCommuteFromMin(minutes: Int)
+
+    // Naps: simple serialization, e.g. "12:00|30;18:00|20"
+    fun setNapsSerialized(serialized: String)
+
 }

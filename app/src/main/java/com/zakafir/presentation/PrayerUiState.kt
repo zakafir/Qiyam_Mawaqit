@@ -4,6 +4,7 @@ import com.zakafir.domain.model.QiyamMode
 import com.zakafir.domain.model.QiyamWindow
 import com.zakafir.domain.model.YearlyPrayers
 import com.zakafir.presentation.screen.NapConfig
+import com.zakafir.presentation.screen.WorkingUiState
 
 data class PrayerUiState(
     val masjidId: String = "",
@@ -12,6 +13,7 @@ data class PrayerUiState(
     val enableNaps: Boolean = false,
     val yearlyPrayers: YearlyPrayers? = null,
     val qiyamUiState: QiyamUiState? = null,
+    val workState: WorkingUiState = WorkingUiState(),
     val isLoading: Boolean = false,
     val error: String? = null,
     val streak: Int = 11,

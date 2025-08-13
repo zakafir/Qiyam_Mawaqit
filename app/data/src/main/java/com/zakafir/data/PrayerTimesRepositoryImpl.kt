@@ -65,4 +65,31 @@ class PrayerTimesRepositoryImpl(
     override fun enableIshaBuffer(enabled: Boolean) {
         localDataSource.enableIshaBuffer(enabled)
     }
+
+    override fun updateWorkEnd(it: String) {
+        localDataSource.updateWorkEnd(it)
+    }
+
+    override fun updateWorkStart(it: String) {
+        localDataSource.updateWorkStart(it)
+    }
+
+    override fun updateCommuteToMin(it: Int) {
+        localDataSource.updateCommuteToMin(it)
+    }
+
+    override fun updateCommuteFromMin(it: Int) {
+        localDataSource.updateCommuteFromMin(it)
+    }
+
+    override fun setDesiredSleepMinutes(minutes: Int) = localDataSource.setDesiredSleepMinutes(minutes)
+    override fun setPostFajrBufferMin(minutes: Int)   = localDataSource.setPostFajrBufferMin(minutes)
+    override fun setIshaBufferMin(minutes: Int)       = localDataSource.setIshaBufferMin(minutes)
+    override fun setMinNightStart(hhmm: String)       = localDataSource.setMinNightStart(hhmm)
+    override fun setDisallowPostFajrIfFajrAfter(hhmm: String) = localDataSource.setDisallowPostFajrIfFajrAfter(hhmm)
+    override fun setLatestMorningEnd(hhmm: String)    = localDataSource.setLatestMorningEnd(hhmm)
+
+    override fun setCommuteFromMin(minutes: Int)      = localDataSource.setCommuteFromMin(minutes)
+
+    override fun setNapsSerialized(serialized: String)= localDataSource.setNapsSerialized(serialized)
 }

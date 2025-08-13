@@ -113,6 +113,12 @@ fun QiyamApp(
                     onEnableIshaBufferChange = {
                         sharedViewModel.enableIshaBuffer(it)
                     },
+                    onWorkStartChange = { sharedViewModel.updateWorkStart(it) },
+                    onWorkEndChange = { sharedViewModel.updateWorkEnd(it) },
+                    onCommuteToMinChange = { sharedViewModel.updateCommuteToMin(it) },
+                    onCommuteFromMinChange = {
+                        sharedViewModel.updateCommuteFromMin(it)
+                    },
                 )
             }
         }

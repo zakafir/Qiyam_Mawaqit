@@ -132,4 +132,52 @@ class LocalDataSourceImpl(
     override fun enableIshaBuffer(enabled: Boolean) {
         prefs.edit { putBoolean("enable_isha_buffer", enabled) }
     }
+
+    override fun updateWorkEnd(it: String) {
+        prefs.edit { putString("work_end", it) }
+    }
+
+    override fun updateWorkStart(it: String) {
+        prefs.edit { putString("work_start", it) }
+    }
+
+    override fun updateCommuteToMin(it: Int) {
+        prefs.edit { putInt("commute_to_min", it.coerceAtLeast(0)) }
+    }
+
+    override fun updateCommuteFromMin(it: Int) {
+        prefs.edit { putInt("commute_from_min", it.coerceAtLeast(0)) }
+    }
+
+    override fun setDesiredSleepMinutes(minutes: Int) {
+        prefs.edit { putInt("desired_sleep_min", minutes.coerceIn(240, 720)) }
+    }
+
+    override fun setPostFajrBufferMin(minutes: Int) {
+        prefs.edit { putInt("post_fajr_buffer_min", minutes.coerceAtLeast(0)) }
+    }
+
+    override fun setIshaBufferMin(minutes: Int) {
+        prefs.edit { putInt("isha_buffer_min", minutes.coerceAtLeast(0)) }
+    }
+
+    override fun setMinNightStart(hhmm: String) {
+        prefs.edit { putString("min_night_start", hhmm) }
+    }
+
+    override fun setDisallowPostFajrIfFajrAfter(hhmm: String) {
+        prefs.edit { putString("disallow_post_fajr_if_after", hhmm) }
+    }
+
+    override fun setLatestMorningEnd(hhmm: String) {
+        prefs.edit { putString("latest_morning_end", hhmm) }
+    }
+
+    override fun setCommuteFromMin(minutes: Int) {
+        prefs.edit { putInt("commute_from_min", minutes.coerceAtLeast(0)) }
+    }
+
+    override fun setNapsSerialized(serialized: String) {
+        prefs.edit { putString("naps_serialized", serialized) }
+    }
 }

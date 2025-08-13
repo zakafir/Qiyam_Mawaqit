@@ -1,9 +1,18 @@
 package com.zakafir.presentation.screen
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.ui.Alignment
+import androidx.compose.foundation.layout.fillMaxHeight
+
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -43,6 +52,7 @@ todo 2: take into accound maghrib and icha times, if they are too late, warn the
 todo 3: the sleeping time starts after praying icha,
 todo 4: if the icha time is too early, give the user the possibility to configure the prefered time to go to sleep, so that he could sleep from the configured time till the start of Qiyam
 todo 5: let the user enable and disable settings if needed
+ todo 6: also, store all the other settings that are not stored yet (like desired sleep...) store them also using callbacks and create viewModel, repo and localDataSource functions
  */
 @Composable
 fun SettingsScreen(
@@ -59,6 +69,11 @@ fun SettingsScreen(
     onEnableIshaBufferChange: (Boolean) -> Unit,
     onEnablePostFajrChange: (Boolean) -> Unit,
     onEnableNapsChange: (Boolean) -> Unit,
+    // Work & commute (provided by VM)
+    onWorkStartChange: (String) -> Unit,
+    onWorkEndChange: (String) -> Unit,
+    onCommuteToMinChange: (Int) -> Unit,
+    onCommuteFromMinChange: (Int) -> Unit,
 ) {
     val scrollState = rememberScrollState()
     Column(
@@ -89,56 +104,6 @@ fun SettingsScreen(
                 colors = SwitchDefaults.colors()
             )
         }
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text("Enable post‑Fajr sleep")
-            Switch(
-                checked = ui.enablePostFajr,
-                onCheckedChange = onEnablePostFajrChange
-            )
-        }
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text("Enable naps")
-            Switch(
-                checked = ui.enableNaps,
-                onCheckedChange = onEnableNapsChange
-            )
-        }
-
-        // Desired sleep (15-minute steps)
-        val desiredSleepMin = (ui.desiredSleepHours * 60f).toInt()
-        Text(text = "Desired sleep — ${formatHm(desiredSleepMin)}")
-        Text(
-            text = "Total sleep you aim to get in a 24‑hour period (night + naps). Drag to select, snaps to 15‑minute steps.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Slider(
-            value = desiredSleepMin.toFloat(),
-            onValueChange = { raw ->
-                val snapped = (raw / 15f).roundToInt() * 15 // snap to 15-minute increments
-                onDesiredSleepHoursChange(snapped / 60f)
-            },
-            valueRange = 240f..720f // 4h..12h in minutes
-        )
-
-        // Post‑Fajr buffer
-        if (ui.enablePostFajr) {
-            Text(text = "Post‑Fajr buffer — ${ui.postFajrBufferMin} min")
-            Text(
-                text = "Time to stay awake after praying Fajr before any post‑Fajr sleep is allowed.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Slider(
-                value = ui.postFajrBufferMin.toFloat(),
-                onValueChange = {
-                    val v = it.toInt()
-                    onPostFajrBufferMinChange(v)
-                },
-                valueRange = 0f..120f
-            )
-        }
-
         // Isha buffer
         if (ui.enableIshaBuffer) {
             Text(text = "Isha buffer — ${ui.ishaBufferMin} min")
@@ -156,43 +121,20 @@ fun SettingsScreen(
                 valueRange = 0f..120f
             )
         }
-
-        // Preferred bedtime (not before)
-        TimePickerField(
-            label = "Preferred bedtime (not before)",
-            value = ui.minNightStart,
-            onValueChange = { onMinNightStartChange(it) }
-        )
-        Text(
-            text = "You prefer to go to bed at this time (e.g., 22:00) or later. • If Isha is earlier than this, you still wait until this time. • If Isha is later than this, the planner may schedule a short nap before Isha and wake you up for prayer.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-
-        // Disable post‑Fajr if Fajr after
-        TimePickerField(
-            label = "Disable post‑Fajr sleep if Fajr after",
-            value = ui.disallowPostFajrIfFajrAfter,
-            onValueChange = { onDisallowPostFajrIfFajrAfterChange(it) }
-        )
-        Text(
-            text = "If tomorrow's Fajr is later than this time, the planner will skip the post‑Fajr sleep block.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-
-        // Latest post‑Fajr end
-        TimePickerField(
-            label = "Latest post‑Fajr end",
-            value = ui.latestMorningEnd,
-            onValueChange = { onLatestMorningEndChange(it) }
-        )
-        Text(
-            text = "Cut‑off time for any post‑Fajr sleep. The planner won't schedule sleep after this time.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text("Enable post‑Fajr sleep")
+            Switch(
+                checked = ui.enablePostFajr,
+                onCheckedChange = onEnablePostFajrChange
+            )
+        }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text("Enable naps")
+            Switch(
+                checked = ui.enableNaps,
+                onCheckedChange = onEnableNapsChange
+            )
+        }
         // Naps
         Divider()
         Text(text = "Naps", style = MaterialTheme.typography.titleSmall)
@@ -244,6 +186,114 @@ fun SettingsScreen(
             )
         }
 
+        // Desired sleep (15-minute steps)
+        val desiredSleepMin = (ui.desiredSleepHours * 60f).toInt()
+        Text(text = "Desired sleep — ${formatHm(desiredSleepMin)}")
+        Text(
+            text = "Total sleep you aim to get in a 24‑hour period (night + naps). Drag to select, snaps to 15‑minute steps.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Slider(
+            value = desiredSleepMin.toFloat(),
+            onValueChange = { raw ->
+                val snapped = (raw / 15f).roundToInt() * 15 // snap to 15-minute increments
+                onDesiredSleepHoursChange(snapped / 60f)
+            },
+            valueRange = 240f..720f // 4h..12h in minutes
+        )
+
+        // Post‑Fajr buffer
+        if (ui.enablePostFajr) {
+            Text(text = "Post‑Fajr buffer — ${ui.postFajrBufferMin} min")
+            Text(
+                text = "Time to stay awake after praying Fajr before any post‑Fajr sleep is allowed.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Slider(
+                value = ui.postFajrBufferMin.toFloat(),
+                onValueChange = {
+                    val v = it.toInt()
+                    onPostFajrBufferMinChange(v)
+                },
+                valueRange = 0f..120f
+            )
+        }
+
+        // Work & Commute
+        Divider()
+        Text(text = "Work & Commute", style = MaterialTheme.typography.titleMedium)
+        Text(
+            text = "Your fixed daytime obligations. These will be considered in the daily time allocation preview.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(Modifier.weight(1f)) {
+                TimePickerField(
+                    label = "Work starts",
+                    value = ui.workState.workStart,
+                    onValueChange = onWorkStartChange
+                )
+            }
+            Column(Modifier.weight(1f)) {
+                TimePickerField(
+                    label = "Work ends",
+                    value = ui.workState.workEnd,
+                    onValueChange = onWorkEndChange
+                )
+            }
+        }
+        Text(text = "Commute to work — ${ui.workState.commuteToMin} min")
+        Slider(
+            value = ui.workState.commuteToMin.toFloat(),
+            onValueChange = { onCommuteToMinChange(it.toInt()) },
+            valueRange = 0f..180f
+        )
+        Text(text = "Commute from work — ${ui.workState.commuteFromMin} min")
+        Slider(
+            value = ui.workState.commuteFromMin.toFloat(),
+            onValueChange = { onCommuteFromMinChange(it.toInt()) },
+            valueRange = 0f..180f
+        )
+
+        // Preferred bedtime (not before)
+        TimePickerField(
+            label = "Preferred bedtime (not before)",
+            value = ui.minNightStart,
+            onValueChange = { onMinNightStartChange(it) }
+        )
+        Text(
+            text = "You prefer to go to bed at this time (e.g., 22:00) or later. • If Isha is earlier than this, you still wait until this time. • If Isha is later than this, the planner may schedule a short nap before Isha and wake you up for prayer.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        // Disable post‑Fajr if Fajr after
+        TimePickerField(
+            label = "Disable post‑Fajr sleep if Fajr after",
+            value = ui.disallowPostFajrIfFajrAfter,
+            onValueChange = { onDisallowPostFajrIfFajrAfterChange(it) }
+        )
+        Text(
+            text = "If tomorrow's Fajr is later than this time, the planner will skip the post‑Fajr sleep block.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        // Latest post‑Fajr end
+        TimePickerField(
+            label = "Latest post‑Fajr end",
+            value = ui.latestMorningEnd,
+            onValueChange = { onLatestMorningEndChange(it) }
+        )
+        Text(
+            text = "Cut‑off time for any post‑Fajr sleep. The planner won't schedule sleep after this time.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
         val qiyamStart = ui.qiyamUiState?.window?.start
         val todayIsha = ui.yearlyPrayers?.prayerTimes?.getOrNull(0)?.icha
         val todayMaghrib = ui.yearlyPrayers?.prayerTimes?.getOrNull(0)?.maghreb
@@ -275,6 +325,112 @@ fun SettingsScreen(
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
+        // Compute target sleep bar logic (mirror SleepScheduleCard's totalMin logic)
+        val prayerBufferForPreviews = 10 // minutes to be awake before a prayer
+
+        // Night sleep: from max(Isha+buffer, minNightStart) to qiyamStart
+        val ishaWithBuffer = todayIsha?.let { addMinutes(it, ui.ishaBufferMin) } ?: ui.minNightStart
+        val nightStartBar = maxHm(ishaWithBuffer, ui.minNightStart)
+        val nightBlockMinBar = if (qiyamStart != null) durationBetween(nightStartBar, qiyamStart) else 0
+
+        // Optional pre‑Isha nap if Isha is later than preferred bedtime
+        var preIshaNapMinBar = 0
+        if (todayIsha != null && compareHm(todayIsha, ui.minNightStart) > 0) {
+            val napStart = ui.minNightStart
+            var napEnd = addMinutes(todayIsha, -prayerBufferForPreviews) ?: todayIsha
+            if (todayMaghrib != null && isBetween(todayMaghrib, napStart, napEnd)) {
+                val beforeMaghrib = addMinutes(todayMaghrib, -prayerBufferForPreviews)
+                if (beforeMaghrib != null) {
+                    napEnd = minHm(napEnd, beforeMaghrib)
+                }
+            }
+            if (compareHm(napEnd, napStart) > 0) {
+                val window = durationBetween(napStart, napEnd)
+                val take = minOf(window, desiredSleepMin) // will be capped by remaining below
+                if (take > 0) preIshaNapMinBar = take
+            }
+        }
+
+        // Remaining target after pre‑Isha and night sleep
+        var remainingBar = (desiredSleepMin - preIshaNapMinBar - nightBlockMinBar).coerceAtLeast(0)
+
+        // Post‑Fajr sleep: only if allowed and Fajr before cutoff, capped by remaining
+        var postFajrMinBar = 0
+        if (
+            ui.allowPostFajr && ui.enablePostFajr && tomorrowFajr != null &&
+            compareHm(tomorrowFajr, ui.disallowPostFajrIfFajrAfter) <= 0 && remainingBar > 0
+        ) {
+            val postStart = addMinutes(tomorrowFajr, ui.postFajrBufferMin)
+            if (postStart != null && compareHm(ui.latestMorningEnd, postStart) > 0) {
+                val window = durationBetween(postStart, ui.latestMorningEnd)
+                val take = minOf(window, remainingBar)
+                if (take > 0) {
+                    postFajrMinBar = take
+                    remainingBar -= take
+                }
+            }
+        }
+
+        // Naps (only if enabled), each capped by remaining target; respect Dhuhr overlap like in card
+        var napsTotalBar = 0
+        if (ui.enableNaps && remainingBar > 0) {
+            ui.naps.forEach { nap ->
+                if (remainingBar <= 0) return@forEach
+                val start = nap.start
+                var end = addMinutes(start, nap.durationMin) ?: start
+                if (tomorrowDhuhr != null && isBetween(tomorrowDhuhr, start, end)) {
+                    val cut = addMinutes(tomorrowDhuhr, -prayerBufferForPreviews)
+                    if (cut != null) end = cut
+                }
+                if (compareHm(end, start) > 0) {
+                    val window = durationBetween(start, end)
+                    val take = minOf(window, remainingBar)
+                    if (take > 0) {
+                        napsTotalBar += take
+                        remainingBar -= take
+                    }
+                }
+            }
+        }
+
+        val totalSleepBar = (preIshaNapMinBar + nightBlockMinBar + postFajrMinBar + napsTotalBar).coerceAtLeast(0)
+
+        // Daily time allocation (Sleep vs Qiyam vs Work+Commute)
+        val qiyamEnd = ui.qiyamUiState?.window?.end
+        val qiyamMin = if (qiyamStart != null && qiyamEnd != null) durationBetween(qiyamStart, qiyamEnd) else 0
+        val workMin = durationBetween(ui.workState.workStart, ui.workState.workEnd)
+        val workPlusCommuteMin = (workMin + ui.workState.commuteToMin + ui.workState.commuteFromMin).coerceAtLeast(0)
+
+        StackedDailyBar(
+            sleepMin = totalSleepBar,
+            qiyamMin = qiyamMin,
+            workCommuteMin = workPlusCommuteMin,
+        )
+
+        // Suggestions under the bar
+        val suggestions = buildList {
+            if (qiyamStart != null) add("Night sleep: ${nightStartBar} → ${qiyamStart}")
+            if (postFajrMinBar > 0 && tomorrowFajr != null) {
+                val startPost = addMinutes(tomorrowFajr, ui.postFajrBufferMin) ?: tomorrowFajr
+                val endPost = ui.latestMorningEnd
+                add("Post‑Fajr: ${startPost} → ${endPost}")
+            }
+            if (ui.enableNaps && ui.naps.isNotEmpty()) {
+                ui.naps.forEachIndexed { idx, n ->
+                    val napEnd = addMinutes(n.start, n.durationMin) ?: n.start
+                    add("Nap ${idx + 1}: ${n.start} → ${napEnd}")
+                }
+            }
+            add("Work: ${ui.workState.workStart} → ${ui.workState.workEnd} (Commute ${ui.workState.commuteToMin}+${ui.workState.commuteFromMin} min)")
+        }
+        if (suggestions.isNotEmpty()) {
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = "Suggestions:\n" + suggestions.joinToString("\n") { "• " + it },
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
 
         SleepScheduleCard(
             desiredMinutes = desiredSleepMin,
@@ -291,6 +447,56 @@ fun SettingsScreen(
             minNightStart = ui.minNightStart,
             disallowPostFajrIfFajrAfter = ui.disallowPostFajrIfFajrAfter
         )
+    }
+}
+
+@Composable
+private fun StackedDailyBar(
+    sleepMin: Int,
+    qiyamMin: Int,
+    workCommuteMin: Int,
+) {
+    val total = 24 * 60
+    val s = sleepMin.coerceAtLeast(0)
+    val q = qiyamMin.coerceAtLeast(0)
+    val w = workCommuteMin.coerceAtLeast(0)
+    val used = (s + q + w).coerceAtMost(total)
+    val free = (total - used).coerceAtLeast(0)
+
+    val sleepColor = Color(0xFF4CAF50)     // green
+    val qiyamColor = Color(0xFFFFC107)     // amber
+    val workColor = Color(0xFF2196F3)      // blue
+    val freeColor = Color(0xFF9E9E9E)      // grey
+
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        // Legend
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            LegendItem(color = sleepColor, label = "Sleep")
+            LegendItem(color = qiyamColor, label = "Qiyam")
+            LegendItem(color = workColor, label = "Work+Commute")
+            LegendItem(color = freeColor, label = "Free")
+        }
+        Text(text = "Daily time allocation (24h)")
+        Row(Modifier.fillMaxWidth().height(12.dp)) {
+            if (s > 0) Box(Modifier.weight(s.toFloat(), fill = true).fillMaxHeight().background(sleepColor))
+            if (q > 0) Box(Modifier.weight(q.toFloat(), fill = true).fillMaxHeight().background(qiyamColor))
+            if (w > 0) Box(Modifier.weight(w.toFloat(), fill = true).fillMaxHeight().background(workColor))
+            if (free > 0) Box(Modifier.weight(free.toFloat(), fill = true).fillMaxHeight().background(freeColor))
+        }
+        Text(
+            text = "Sleep: ${formatHm(s)}  •  Qiyam: ${formatHm(q)}  •  Work+Commute: ${formatHm(w)}  •  Free: ${formatHm(free)}",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+@Composable
+private fun LegendItem(color: Color, label: String) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Box(Modifier.size(12.dp).background(color))
+        Spacer(Modifier.width(6.dp))
+        Text(text = label, style = MaterialTheme.typography.bodySmall)
     }
 }
 
@@ -475,6 +681,12 @@ private fun PreviewSettings() {
             minNightStart = "21:00",
             disallowPostFajrIfFajrAfter = "06:00",
             naps = naps,
+            workState = WorkingUiState(
+                workStart = "06:00",
+                workEnd = "14:00",
+                commuteToMin = 0,
+                commuteFromMin = 0
+            )
         ),
         onDesiredSleepHoursChange = {},
         onPostFajrBufferMinChange = {},
@@ -502,6 +714,10 @@ private fun PreviewSettings() {
         onEnableNapsChange = {
 
         },
+        onWorkStartChange = {},
+        onWorkEndChange = {},
+        onCommuteToMinChange = {},
+        onCommuteFromMinChange = {},
     )
 }
 

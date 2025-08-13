@@ -65,10 +65,10 @@ class PrayerTimesViewModel(
                         _uiState.update { it.copy(searchResults = results) }
                     } catch (c: CancellationException) {
                         print(c.message)
-                        _uiState.update { it.copy(searchResults = emptyList(),) }
+                        _uiState.update { it.copy(searchResults = emptyList()) }
                     } catch (c: Throwable) {
                         print(c.message)
-                        _uiState.update { it.copy(searchResults = emptyList(),) }
+                        _uiState.update { it.copy(searchResults = emptyList()) }
                     }
                 }
         }
@@ -77,9 +77,10 @@ class PrayerTimesViewModel(
     fun refresh() {
         viewModelScope.launch {
             // start loading & clear previous error
-            _uiState.update { it.copy(isLoading = true,) }
+            _uiState.update { it.copy(isLoading = true) }
 
-            val currentMasjidId = _uiState.value.yearlyPrayers?.deducedMasjidId ?: _uiState.value.masjidId
+            val currentMasjidId =
+                _uiState.value.yearlyPrayers?.deducedMasjidId ?: _uiState.value.masjidId
 
             // 1) Load prayers as Result
             val prayersResult = try {
@@ -93,11 +94,12 @@ class PrayerTimesViewModel(
             var newState = _uiState.value
             prayersResult
                 .onSuccess { prayers ->
-                    newState = newState.copy(yearlyPrayers = prayers, masjidId = prayers.deducedMasjidId)
+                    newState =
+                        newState.copy(yearlyPrayers = prayers, masjidId = prayers.deducedMasjidId)
                 }
                 .onFailure { e ->
                     // Null out prayers on failure so UI shows nothing
-                    newState = newState.copy(error = e.message ?: "Unknown error",)
+                    newState = newState.copy(error = e.message ?: "Unknown error")
                 }
             // stop loading
             _uiState.value = newState.copy()
@@ -136,20 +138,29 @@ class PrayerTimesViewModel(
             qiyamResult
                 .onSuccess { qiyam ->
                     _uiState.update { s ->
-                        val ui = convertToQiyamUi(qiyam, mode = mode, bufferMinutes = s.bufferMinutes)
+                        val ui =
+                            convertToQiyamUi(qiyam, mode = mode, bufferMinutes = s.bufferMinutes)
                         s.copy(qiyamUiState = ui, error = null)
                     }
                 }
                 .onFailure { e ->
                     _uiState.update { s ->
-                        s.copy(qiyamUiState = null, error = e.message ?: "Failed to compute Qiyam window.")
+                        s.copy(
+                            qiyamUiState = null,
+                            error = e.message ?: "Failed to compute Qiyam window."
+                        )
                     }
                 }
         }
     }
 
-    private fun convertToQiyamUi(qiyam: QiyamWindow, mode: QiyamMode, bufferMinutes: Int): QiyamUiState {
-        val today: LocalDate = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
+    private fun convertToQiyamUi(
+        qiyam: QiyamWindow,
+        mode: QiyamMode,
+        bufferMinutes: Int
+    ): QiyamUiState {
+        val today: LocalDate =
+            Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
 
         fun parseHourMinute(timeStr: String): Pair<Int, Int> {
             val parts = timeStr.split(":")
@@ -159,10 +170,19 @@ class PrayerTimesViewModel(
         }
 
         val (startHour, startMinute) = parseHourMinute(qiyam.start)
-        val startDateTime = LocalDateTime(today.year, today.monthNumber, today.dayOfMonth, startHour, startMinute, 0, 0)
+        val startDateTime = LocalDateTime(
+            today.year,
+            today.monthNumber,
+            today.dayOfMonth,
+            startHour,
+            startMinute,
+            0,
+            0
+        )
 
         val (endHour, endMinute) = parseHourMinute(qiyam.end)
-        var endCandidate = LocalDateTime(today.year, today.monthNumber, today.dayOfMonth, endHour, endMinute, 0, 0)
+        var endCandidate =
+            LocalDateTime(today.year, today.monthNumber, today.dayOfMonth, endHour, endMinute, 0, 0)
 
         val tz = TimeZone.currentSystemDefault()
         val startInstant = startDateTime.toInstant(tz)
@@ -190,30 +210,30 @@ class PrayerTimesViewModel(
     }
 
     fun updateDesiredSleepHours(v: Float) {
-        _uiState.update { it.copy(desiredSleepHours = v.coerceIn(4f, 12f),) }
+        _uiState.update { it.copy(desiredSleepHours = v.coerceIn(4f, 12f)) }
     }
 
     fun updatePostFajrBuffer(v: Int) {
-        _uiState.update { it.copy(postFajrBufferMin = v.coerceIn(0, 120),) }
+        _uiState.update { it.copy(postFajrBufferMin = v.coerceIn(0, 120)) }
     }
 
     fun updateIshaBuffer(v: Int) {
-        _uiState.update { it.copy(ishaBufferMin = v.coerceIn(0, 120),) }
+        _uiState.update { it.copy(ishaBufferMin = v.coerceIn(0, 120)) }
     }
 
     fun updateMinNightStart(v: String) {
-        _uiState.update { it.copy(minNightStart = v,) }
+        _uiState.update { it.copy(minNightStart = v) }
     }
 
     fun updatePostFajrCutoff(v: String) {
-        _uiState.update { it.copy(disallowPostFajrIfFajrAfter = v,) }
+        _uiState.update { it.copy(disallowPostFajrIfFajrAfter = v) }
     }
 
     fun updateNap(index: Int, config: NapConfig) {
         _uiState.update { s ->
             val list = s.naps.toMutableList()
             if (index in list.indices) list[index] = config
-            s.copy(naps = list,)
+            s.copy(naps = list)
         }
     }
 
@@ -228,7 +248,7 @@ class PrayerTimesViewModel(
                 else -> "16:00"
             }
             val updated = (current + NapConfig(start = defaultStart, durationMin = 0)).take(3)
-            s.copy(naps = updated,)
+            s.copy(naps = updated)
         }
     }
 
@@ -238,12 +258,12 @@ class PrayerTimesViewModel(
             if (index in list.indices) {
                 list.removeAt(index)
             }
-            s.copy(naps = list,)
+            s.copy(naps = list)
         }
     }
 
     fun updateLatestMorningEnd(v: String) {
-        _uiState.update { it.copy(latestMorningEnd = v,) }
+        _uiState.update { it.copy(latestMorningEnd = v) }
     }
 
     fun updateMasjidId(v: String) {
@@ -253,13 +273,13 @@ class PrayerTimesViewModel(
             _masjidQuery.value = ""
             return
         }
-        _uiState.update { it.copy(masjidId = v,) }
+        _uiState.update { it.copy(masjidId = v) }
         _masjidQuery.value = v
     }
 
     fun selectMasjidSuggestion(slug: String?) {
         if (slug == null || slug.isEmpty()) {
-            _uiState.update { it.copy(error = "Please enter a Masjid ID",) }
+            _uiState.update { it.copy(error = "Please enter a Masjid ID") }
             return
         }
         _uiState.update {
@@ -287,7 +307,11 @@ class PrayerTimesViewModel(
         val tm = lastTomorrows
         if (t != null && tm != null) {
             viewModelScope.launch {
-                val res = try { repo.computeQiyamWindow(it, t, tm) } catch (thr: Throwable) { Result.failure(thr) }
+                val res = try {
+                    repo.computeQiyamWindow(it, t, tm)
+                } catch (thr: Throwable) {
+                    Result.failure(thr)
+                }
                 res
                     .onSuccess { q ->
                         _uiState.update { s ->
@@ -302,18 +326,39 @@ class PrayerTimesViewModel(
         }
     }
 
-fun enableNaps(enabled: Boolean) {
-    _uiState.update { s -> s.copy(enableNaps = enabled) }
-    viewModelScope.launch { runCatching { repo.enableNaps(enabled) } }
-}
+    fun enableNaps(enabled: Boolean) {
+        _uiState.update { s -> s.copy(enableNaps = enabled) }
+        viewModelScope.launch { runCatching { repo.enableNaps(enabled) } }
+    }
 
-fun enablePostFajr(enabled: Boolean) {
-    _uiState.update { s -> s.copy(enablePostFajr = enabled) }
-    viewModelScope.launch { runCatching { repo.enablePostFajr(enabled) } }
-}
+    fun enablePostFajr(enabled: Boolean) {
+        _uiState.update { s -> s.copy(enablePostFajr = enabled) }
+        viewModelScope.launch { runCatching { repo.enablePostFajr(enabled) } }
+    }
 
-fun enableIshaBuffer(enabled: Boolean) {
-    _uiState.update { s -> s.copy(enableIshaBuffer = enabled) }
-    viewModelScope.launch { runCatching { repo.enableIshaBuffer(enabled) } }
-}
+    fun enableIshaBuffer(enabled: Boolean) {
+        _uiState.update { s -> s.copy(enableIshaBuffer = enabled) }
+        viewModelScope.launch { runCatching { repo.enableIshaBuffer(enabled) } }
+    }
+
+    fun updateWorkStart(it: String) {
+        _uiState.update { s -> s.copy(workState = s.workState.copy(workStart = it)) }
+        viewModelScope.launch { runCatching { repo.updateWorkStart(it) } }
+
+    }
+
+    fun updateWorkEnd(it: String) {
+        _uiState.update { s -> s.copy(workState = s.workState.copy(workEnd = it)) }
+        viewModelScope.launch { runCatching { repo.updateWorkEnd(it) } }
+    }
+
+    fun updateCommuteToMin(it: Int) {
+        _uiState.update { s -> s.copy(workState = s.workState.copy(commuteToMin = it.coerceAtLeast(0))) }
+        viewModelScope.launch { runCatching { repo.updateCommuteToMin(it) } }
+    }
+
+    fun updateCommuteFromMin(it: Int) {
+        _uiState.update { s -> s.copy(workState = s.workState.copy(commuteFromMin = it.coerceAtLeast(0))) }
+        viewModelScope.launch { runCatching { repo.updateCommuteFromMin(it) } }
+    }
 }
