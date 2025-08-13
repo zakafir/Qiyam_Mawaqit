@@ -43,6 +43,7 @@ fun QiyamApp(
     onUpdateWeeklyGoal: (Int) -> Unit = {}
 ) {
     val nav = rememberNavController()
+    val sharedViewModel: PrayerTimesViewModel = koinViewModel()
     val context = LocalContext.current
     Scaffold(
         bottomBar = { BottomNavBar(nav) }
@@ -53,23 +54,21 @@ fun QiyamApp(
             modifier = Modifier.padding(padding)
         ) {
             composable(Screen.Home.route) {
-                val viewModel: PrayerTimesViewModel = koinViewModel<PrayerTimesViewModel>()
-                val vmState = viewModel.uiState.collectAsState().value
+                val vmState = sharedViewModel.uiState.collectAsState().value
                 HomeScreen(
                     vmUiState = vmState,
                     onSchedule = { onScheduleTonight(it) },
                     onTestAlarmUi = { nav.navigate(Screen.Wake.route) },
                     onOpenSettings = { nav.navigate(Screen.Settings.route) },
-                    onMasjidIdChange = { viewModel.updateMasjidId(it) },
-                    onSelectMasjidSuggestion = { viewModel.selectMasjidSuggestion(it) },
+                    onMasjidIdChange = { sharedViewModel.updateMasjidId(it) },
+                    onSelectMasjidSuggestion = { sharedViewModel.selectMasjidSuggestion(it) },
                     onComputeQiyam = { today, tomorrow ->
-                        viewModel.computeQiyamWindow(today, tomorrow)
+                        sharedViewModel.computeQiyamWindow(today, tomorrow)
                     }
                 )
             }
             composable(Screen.Wake.route) {
-                val viewModel = koinViewModel<PrayerTimesViewModel>()
-                val vmState = viewModel.uiState.collectAsState().value
+                val vmState = sharedViewModel.uiState.collectAsState().value
                 val fallbackTime = LocalDateTime(2025, 1, 1, 3, 30)
                 val fallbackDate = LocalDate(2025, 1, 1)
                 WakeScreen(
@@ -80,8 +79,7 @@ fun QiyamApp(
                 )
             }
             composable(Screen.History.route) {
-                val viewModel = koinViewModel<PrayerTimesViewModel>()
-                val vmState = viewModel.uiState.collectAsState().value
+                val vmState = sharedViewModel.uiState.collectAsState().value
                 HistoryScreen(
                     listOf(
                         QiyamLog(date = LocalDate(2025, 1, 1), prayed = true, woke = true),
@@ -90,25 +88,24 @@ fun QiyamApp(
                 )
             }
             composable(Screen.Settings.route) {
-                val viewModel = koinViewModel<PrayerTimesViewModel>()
-                val vmState = viewModel.uiState.collectAsState().value
+                val vmState = sharedViewModel.uiState.collectAsState().value
 
                 SettingsScreen(
-                    onBufferChange = { viewModel.updateBuffer(it) },
-                    onGoalChange = { viewModel.updateWeeklyGoal(it) },
+                    onBufferChange = { sharedViewModel.updateBuffer(it) },
+                    onGoalChange = { sharedViewModel.updateWeeklyGoal(it) },
 
                     ui = vmState, // if you refactored SettingsScreen to take the PrayerUiState
 
-                    onDesiredSleepHoursChange = { viewModel.updateDesiredSleepHours(it) },
-                    onPostFajrBufferMinChange = { viewModel.updatePostFajrBuffer(it) },
-                    onIshaBufferMinChange = { viewModel.updateIshaBuffer(it) },
-                    onMinNightStartChange = { viewModel.updateMinNightStart(it) },
-                    onDisallowPostFajrIfFajrAfterChange = { viewModel.updatePostFajrCutoff(it) },
+                    onDesiredSleepHoursChange = { sharedViewModel.updateDesiredSleepHours(it) },
+                    onPostFajrBufferMinChange = { sharedViewModel.updatePostFajrBuffer(it) },
+                    onIshaBufferMinChange = { sharedViewModel.updateIshaBuffer(it) },
+                    onMinNightStartChange = { sharedViewModel.updateMinNightStart(it) },
+                    onDisallowPostFajrIfFajrAfterChange = { sharedViewModel.updatePostFajrCutoff(it) },
 
-                    onUpdateNap = { index, config -> viewModel.updateNap(index, config) },
-                    onAddNap = { viewModel.addNap() },
-                    onRemoveNap = { index -> viewModel.removeNap(index) },
-                    onLatestMorningEndChange = { viewModel.updateLatestMorningEnd(it) }
+                    onUpdateNap = { index, config -> sharedViewModel.updateNap(index, config) },
+                    onAddNap = { sharedViewModel.addNap() },
+                    onRemoveNap = { index -> sharedViewModel.removeNap(index) },
+                    onLatestMorningEndChange = { sharedViewModel.updateLatestMorningEnd(it) }
                 )
             }
         }

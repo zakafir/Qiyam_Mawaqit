@@ -25,6 +25,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.border
 import com.zakafir.presentation.PrayerUiState
 import com.zakafir.presentation.component.TimePickerField
 import java.util.Locale
@@ -58,11 +59,26 @@ fun SettingsScreen(
     ) {
         Text(text = "Settings", style = MaterialTheme.typography.titleLarge)
         Divider()
+        Text(
+            text = "Tune how the app plans your night sleep, optional post‑Fajr sleep, and naps. These settings personalize your schedule based on today's Isha and tomorrow's Fajr.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
         Text(text = "Sleep Planner", style = MaterialTheme.typography.titleMedium)
+        Text(
+            text = "Core rules the planner will follow when building your sleep schedule.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
 
         // Desired sleep (15-minute steps)
         val desiredSleepMin = (ui.desiredSleepHours * 60f).toInt()
         Text(text = "Desired sleep — ${formatHm(desiredSleepMin)}")
+        Text(
+            text = "Total sleep you aim to get in a 24‑hour period (night + naps). Drag to select, snaps to 15‑minute steps.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
         Slider(
             value = desiredSleepMin.toFloat(),
             onValueChange = { raw ->
@@ -74,20 +90,28 @@ fun SettingsScreen(
 
         // Post‑Fajr buffer
         Text(text = "Post‑Fajr buffer — ${ui.postFajrBufferMin} min")
+        Text(
+            text = "Time to stay awake after praying Fajr before any post‑Fajr sleep is allowed.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
         Slider(
             value = ui.postFajrBufferMin.toFloat(),
             onValueChange = { onPostFajrBufferMinChange(it.toInt()) },
-            valueRange = 0f..120f,
-            steps = 23
+            valueRange = 0f..120f
         )
 
         // Isha buffer
         Text(text = "Isha buffer — ${ui.ishaBufferMin} min")
+        Text(
+            text = "Wind‑down time after Isha before you are allowed to start night sleep.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
         Slider(
             value = ui.ishaBufferMin.toFloat(),
             onValueChange = { onIshaBufferMinChange(it.toInt()) },
-            valueRange = 0f..120f,
-            steps = 23
+            valueRange = 0f..120f
         )
 
         // Earliest night start
@@ -96,12 +120,22 @@ fun SettingsScreen(
             value = ui.minNightStart,
             onValueChange = onMinNightStartChange
         )
+        Text(
+            text = "Do not schedule night sleep before this time, even if Isha is very early.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
 
         // Disable post‑Fajr if Fajr after
         TimePickerField(
             label = "Disable post‑Fajr sleep if Fajr after",
             value = ui.disallowPostFajrIfFajrAfter,
             onValueChange = onDisallowPostFajrIfFajrAfterChange
+        )
+        Text(
+            text = "If tomorrow's Fajr is later than this time, the planner will skip the post‑Fajr sleep block.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
         // Latest post‑Fajr end
@@ -110,10 +144,20 @@ fun SettingsScreen(
             value = ui.latestMorningEnd,
             onValueChange = onLatestMorningEndChange
         )
+        Text(
+            text = "Cut‑off time for any post‑Fajr sleep. The planner won't schedule sleep after this time.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
 
         // Naps
         Divider()
         Text(text = "Naps", style = MaterialTheme.typography.titleSmall)
+        Text(
+            text = "Optional extra sleep blocks during the day. The planner will use them only if needed to reach your total sleep goal.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             ui.naps.forEachIndexed { idx, nap ->
                 Row(
@@ -136,8 +180,7 @@ fun SettingsScreen(
                 Slider(
                     value = nap.durationMin.toFloat(),
                     onValueChange = { onUpdateNap(idx, nap.copy(durationMin = it.toInt())) },
-                    valueRange = 10f..120f,
-                    steps = 22
+                    valueRange = 10f..120f
                 )
             }
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
@@ -150,30 +193,18 @@ fun SettingsScreen(
             }
         }
 
-        var desiredHours by remember { mutableStateOf(7) }
-        var allowPostFajr by remember { mutableStateOf(true) }
-        var latestMorningEnd by remember { mutableStateOf("07:30") }
-        var postFajrBufferMin by remember { mutableStateOf(60) } // 45–60 min suggested
-        var ishaBufferMin by remember { mutableStateOf(30) } // wind-down after Isha
-        var naps by remember {
-            mutableStateOf(
-                listOf(
-                    NapConfig(
-                        start = "12:00",
-                        durationMin = 60
-                    )
-                )
-            )
-        }
-        // Seasonal constraints
-        var minNightStart by remember { mutableStateOf("21:30") } // don't sleep before this
-        var disallowPostFajrIfFajrAfter by remember { mutableStateOf("06:30") } // disable post‑Fajr sleep if Fajr is later than this
-
         val qiyamStart = ui.qiyamWindow?.start
         val todayIsha = ui.yearlyPrayers?.prayerTimes?.getOrNull(0)?.icha
         val tomorrowFajr = ui.yearlyPrayers?.prayerTimes?.getOrNull(1)?.fajr
         val tomorrowDhuhr = ui.yearlyPrayers?.prayerTimes?.getOrNull(1)?.dohr
 
+        Divider()
+        Text(text = "Sleep plan preview", style = MaterialTheme.typography.titleMedium)
+        Text(
+            text = "A live preview of tonight’s plan based on your settings and prayer times.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
 
         SleepScheduleCard(
             desiredMinutes = desiredSleepMin,
@@ -207,8 +238,24 @@ private fun SleepScheduleCard(
     minNightStart: String,
     disallowPostFajrIfFajrAfter: String
 ) {
-    ElevatedCard(elevation = CardDefaults.elevatedCardElevation(defaultElevation = 4.dp)) {
+    ElevatedCard(
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.4f), CardDefaults.elevatedShape),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 8.dp),
+        colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+    ) {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(
+                text = "Tonight’s sleep plan",
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onPrimaryContainer
+            )
+            Text(
+                text = "Preview updates automatically when you change settings.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onPrimaryContainer
+            )
             if (icha == null || qiyamStart == null) {
                 Text("Sleep schedule will appear once prayer times load.")
                 return@Column
@@ -303,13 +350,13 @@ private fun SleepScheduleCard(
                 Text(
                     text = "Short by ${formatHm(deficit)}. Consider: sleeping earlier after Isha, extending post‑Fajr, or using more of 12:00–14:00 before Dhuhr.",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
             } else {
                 Text(
                     text = "Goal met or exceeded. Keep consistent!",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
             }
         }
