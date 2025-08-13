@@ -28,6 +28,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -56,7 +58,8 @@ fun MasjidPicker(
     modifier: Modifier = Modifier,
     updateMasjidId: (String) -> Unit,
     selectMasjidSuggestion: (String?) -> Unit,
-    onOpenDetailsScreen: (MosqueDetails) -> Unit
+    onOpenDetailsScreen: (MosqueDetails) -> Unit,
+    enabled: Boolean = true
 ) {
 
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -72,6 +75,7 @@ fun MasjidPicker(
             },
             label = { Text("Masjid (Mawaqit)") },
             singleLine = true,
+            enabled = enabled,
             modifier = Modifier
                 .fillMaxWidth()
                 .onFocusChanged { isFocused = it.isFocused }
@@ -136,13 +140,32 @@ fun HomeScreen(
         }
         // Section: Mawaqit Masjid ID
         item {
+            var editEnabled by remember { mutableStateOf(false) }
+            val focusRequester = remember { FocusRequester() }
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 MasjidPicker(
                     ui = vmUiState,
                     updateMasjidId = onMasjidIdChange,
                     selectMasjidSuggestion = onSelectMasjidSuggestion,
-                    onOpenDetailsScreen = onOpenDetailsScreen
+                    onOpenDetailsScreen = onOpenDetailsScreen,
+                    enabled = editEnabled,
+                    modifier = Modifier.focusRequester(focusRequester)
                 )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FilledTonalButton(onClick = {
+                        editEnabled = true
+                        focusRequester.requestFocus()
+                    }) {
+                        Text("Update")
+                    }
+                    OutlinedButton(onClick = {
+                        onMasjidIdChange("")
+                        onSelectMasjidSuggestion(null)
+                        editEnabled = false
+                    }) {
+                        Text("Remove")
+                    }
+                }
                 Text(
                     text = vmUiState.dataSourceLabel ?: "",
                     style = MaterialTheme.typography.bodySmall,
