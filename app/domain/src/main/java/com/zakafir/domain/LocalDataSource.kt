@@ -11,4 +11,7 @@ interface LocalDataSource {
         todaysPrayerTimes: PrayerTimes?,
         tommorowsPrayerTimes: PrayerTimes?
     ): Result<QiyamWindow>
+
+    fun getLastSelectedMasjidId(): String?
+    fun saveLastSelectedMasjidId(masjidId: String)
 }

@@ -33,7 +33,13 @@ class PrayerTimesViewModel(
     private val _masjidQuery = MutableStateFlow("")
 
     init {
-        refresh()
+        viewModelScope.launch {
+            // Preload last selected masjid id if available, then refresh
+            runCatching { repo.getLastSelectedMasjidId() }
+                .getOrNull()
+                ?.let { last -> if (!last.isNullOrBlank()) _uiState.update { it.copy(masjidId = last) } }
+            refresh()
+        }
         viewModelScope.launch {
             _masjidQuery
                 .debounce(350)
@@ -284,6 +290,7 @@ class PrayerTimesViewModel(
                 isLoading = true,
             )
         }
+        viewModelScope.launch { runCatching { repo.saveLastSelectedMasjidId(slug) } }
         // Trigger a full refresh for the new masjid
         refresh()
     }

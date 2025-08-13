@@ -1,6 +1,7 @@
 package com.zakafir.data.local
 
 import android.content.Context
+import android.content.SharedPreferences
 import com.zakafir.data.mapper.toData
 import com.zakafir.data.mapper.toDomain
 import com.zakafir.data.model.PrayersDTO
@@ -12,9 +13,11 @@ import java.io.File
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.decodeFromString
+import androidx.core.content.edit
 
 class LocalDataSourceImpl(
     private val context: Context,
+    private val prefs: SharedPreferences,
 ): LocalDataSource {
     private val json = Json { prettyPrint = true; ignoreUnknownKeys = true }
 
@@ -36,6 +39,7 @@ class LocalDataSourceImpl(
         context.openFileOutput("$masjidId.json", Context.MODE_PRIVATE).use { out ->
             out.write(text.toByteArray())
         }
+        prefs.edit { putString("selected_masjid_id", masjidId) }
     }
 
     override fun computeQiyamWindow(
@@ -85,4 +89,11 @@ class LocalDataSourceImpl(
         }
     }
 
+    override fun getLastSelectedMasjidId(): String? {
+        return prefs.getString("selected_masjid_id", null)
+    }
+
+    override fun saveLastSelectedMasjidId(masjidId: String) {
+        prefs.edit { putString("selected_masjid_id", masjidId) }
+    }
 }

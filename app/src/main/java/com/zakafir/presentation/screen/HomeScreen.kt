@@ -31,6 +31,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import com.zakafir.domain.model.PrayerTimes
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.Clock
@@ -56,6 +57,8 @@ fun MasjidPicker(
     updateMasjidId: (String) -> Unit,
     selectMasjidSuggestion: (String?) -> Unit,
 ) {
+
+    val keyboardController = LocalSoftwareKeyboardController.current
 
     var isFocused by remember { mutableStateOf(false) }
 
@@ -88,6 +91,7 @@ fun MasjidPicker(
                                 .fillMaxWidth()
                                 .clickable {
                                     isFocused = false
+                                    keyboardController?.hide()
                                     item.second?.let {
                                         selectMasjidSuggestion(it)
                                         updateMasjidId(it)
@@ -150,6 +154,9 @@ fun HomeScreen(
         item {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 vmUiState.yearlyPrayers?.let { prayers ->
+                    val keyboardController = LocalSoftwareKeyboardController.current
+                    keyboardController?.hide()
+
                     val list = prayers.prayerTimes
 
                     // Figure out "today" based on the device timezone and pick entries from the yearly calendar

@@ -39,4 +39,12 @@ class PrayerTimesRepositoryImpl(
     override suspend fun searchMosques(word: String): List<Pair<String?, String?>> {
         return remoteDataSource.searchMosques(word)
     }
+
+    override suspend fun getLastSelectedMasjidId(): String? {
+        return localDataSource.getLastSelectedMasjidId()
+    }
+
+    override suspend fun saveLastSelectedMasjidId(masjidId: String) {
+        localDataSource.saveLastSelectedMasjidId(masjidId)
+    }
 }
