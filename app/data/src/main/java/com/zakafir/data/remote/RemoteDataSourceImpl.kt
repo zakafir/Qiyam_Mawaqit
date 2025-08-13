@@ -6,6 +6,7 @@ import com.zakafir.data.mapper.toDomain
 import com.zakafir.data.model.PrayerTimesDTO
 import com.zakafir.data.model.PrayersDTO
 import com.zakafir.domain.RemoteDataSource
+import com.zakafir.domain.model.MosqueDetails
 import com.zakafir.domain.model.YearlyPrayers
 import java.util.Calendar
 import java.util.Locale
@@ -20,8 +21,8 @@ class RemoteDataSourceImpl(
         PrayersDTO(deducedMasjidId = masjidId, prayerTimesDTO = list).toDomain()
     }
 
-    override suspend fun searchMosques(word: String): List<Pair<String?, String?>> {
-        return api.searchMosques(word).map { it.displayLine to it.slug }
+    override suspend fun searchMosques(word: String): List<MosqueDetails> {
+        return api.searchMosques(word).map { it.toDomain() }
     }
 
     private fun mapYearCalendar(src: YearCalendarDTO): List<PrayerTimesDTO> {

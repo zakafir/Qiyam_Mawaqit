@@ -31,6 +31,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import com.zakafir.domain.model.MosqueDetails
 import com.zakafir.domain.model.PrayerTimes
 import com.zakafir.domain.model.QiyamMode
 import kotlinx.datetime.LocalDateTime
@@ -55,6 +56,7 @@ fun MasjidPicker(
     modifier: Modifier = Modifier,
     updateMasjidId: (String) -> Unit,
     selectMasjidSuggestion: (String?) -> Unit,
+    onOpenDetailsScreen: (MosqueDetails) -> Unit
 ) {
 
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -83,25 +85,23 @@ fun MasjidPicker(
                     .padding(top = 56.dp) // height of the text field
             ) {
                 Column {
-                    ui.searchResults.forEach { item ->
-                        val title = item
+                    ui.searchResults.forEach { mosqueDetails ->
+                        val title = mosqueDetails.displayLine
+                        val slug = mosqueDetails.slug
                         Row(
                             Modifier
                                 .fillMaxWidth()
                                 .clickable {
                                     isFocused = false
                                     keyboardController?.hide()
-                                    item.second?.let {
-                                        selectMasjidSuggestion(it)
-                                        updateMasjidId(it)
-                                    }
+                                    selectMasjidSuggestion(slug)
+                                    updateMasjidId(slug)
+                                    onOpenDetailsScreen(mosqueDetails)
                                 }
                                 .padding(horizontal = 12.dp, vertical = 10.dp)
                         ) {
                             Column(Modifier.weight(1f)) {
-                                title.first?.let { title ->
-                                    Text(title, style = MaterialTheme.typography.bodyLarge)
-                                }
+                                Text(title, style = MaterialTheme.typography.bodyLarge)
                             }
                         }
                         HorizontalDivider()
@@ -118,10 +118,10 @@ fun HomeScreen(
     onMasjidIdChange: (String) -> Unit,
     onSchedule: (LocalDateTime) -> Unit,
     onTestAlarmUi: () -> Unit,
-    onOpenSettings: () -> Unit,
     onSelectMasjidSuggestion: (String?) -> Unit,
     onComputeQiyam: (PrayerTimes?, PrayerTimes?) -> Unit,
-    onModeChange: (QiyamMode) -> Unit
+    onModeChange: (QiyamMode) -> Unit,
+    onOpenDetailsScreen: (MosqueDetails) -> Unit
 ) {
 
     LazyColumn(
@@ -140,7 +140,8 @@ fun HomeScreen(
                 MasjidPicker(
                     ui = vmUiState,
                     updateMasjidId = onMasjidIdChange,
-                    selectMasjidSuggestion = onSelectMasjidSuggestion
+                    selectMasjidSuggestion = onSelectMasjidSuggestion,
+                    onOpenDetailsScreen = onOpenDetailsScreen
                 )
                 Text(
                     text = vmUiState.dataSourceLabel ?: "",
@@ -305,6 +306,7 @@ private fun ModeChip(
         OutlinedButton(onClick = onClick) { Text(text) }
     }
 }
+
 @Composable
 private fun SectionTitle(text: String) {
     Text(text = text, modifier = Modifier.padding(bottom = 4.dp))

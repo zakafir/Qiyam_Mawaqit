@@ -285,7 +285,7 @@ class PrayerTimesViewModel(
         _uiState.update {
             it.copy(
                 masjidId = slug,
-                isLoading = true,
+                selectedMosque = it.searchResults.find { m -> m.slug == slug }
             )
         }
         viewModelScope.launch { runCatching { repo.saveLastSelectedMasjidId(slug) } }
@@ -360,5 +360,12 @@ class PrayerTimesViewModel(
     fun updateCommuteFromMin(it: Int) {
         _uiState.update { s -> s.copy(workState = s.workState.copy(commuteFromMin = it.coerceAtLeast(0))) }
         viewModelScope.launch { runCatching { repo.updateCommuteFromMin(it) } }
+    }
+    fun resetData() {
+        _uiState.value = PrayerUiState()
+        _masjidQuery.value = ""
+        lastTodays = null
+        lastTomorrows = null
+        selectedQiyamMode = QiyamMode.LastThird
     }
 }

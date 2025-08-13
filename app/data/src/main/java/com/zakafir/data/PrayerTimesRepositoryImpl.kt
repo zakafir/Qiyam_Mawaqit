@@ -3,6 +3,7 @@ package com.zakafir.data
 import com.zakafir.domain.LocalDataSource
 import com.zakafir.domain.PrayerTimesRepository
 import com.zakafir.domain.RemoteDataSource
+import com.zakafir.domain.model.MosqueDetails
 import com.zakafir.domain.model.PrayerTimes
 import com.zakafir.domain.model.QiyamMode
 import com.zakafir.domain.model.QiyamWindow
@@ -42,7 +43,7 @@ class PrayerTimesRepositoryImpl(
         )
     }
 
-    override suspend fun searchMosques(word: String): List<Pair<String?, String?>> {
+    override suspend fun searchMosques(word: String): List<MosqueDetails> {
         return remoteDataSource.searchMosques(word)
     }
 

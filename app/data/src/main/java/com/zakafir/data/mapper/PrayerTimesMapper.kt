@@ -1,5 +1,8 @@
 package com.zakafir.data.mapper
 
+import com.zakafir.data.model.MosqueSearchItemDTO
+import com.zakafir.domain.model.MosqueDetails
+
 import com.zakafir.data.model.PrayerTimesDTO
 import com.zakafir.data.model.PrayersDTO
 import com.zakafir.data.model.QiyamWindowDTO
@@ -28,6 +31,41 @@ fun PrayersDTO.toDomain(): YearlyPrayers =
     YearlyPrayers(
         deducedMasjidId = this.deducedMasjidId,
         prayerTimes = this.prayerTimesDTO.map { it.toDomain() }
+    )
+
+fun MosqueSearchItemDTO.toDomain(): MosqueDetails =
+    MosqueDetails(
+        uuid = uuid,
+        name = name,
+        type = type,
+        slug = slug,
+        latitude = latitude,
+        longitude = longitude,
+        associationName = associationName,
+        phone = phone,
+        paymentWebsite = paymentWebsite,
+        email = email,
+        site = site,
+        closed = closed,
+        womenSpace = womenSpace,
+        janazaPrayer = janazaPrayer,
+        aidPrayer = aidPrayer,
+        childrenCourses = childrenCourses,
+        adultCourses = adultCourses,
+        ramadanMeal = ramadanMeal,
+        handicapAccessibility = handicapAccessibility,
+        ablutions = ablutions,
+        parking = parking,
+        times = times,
+        iqama = iqama,
+        jumua = jumua,
+        label = label,
+        localisation = localisation,
+        image = image,
+        jumua2 = jumua2,
+        jumua3 = jumua3,
+        jumuaAsDuhr = jumuaAsDuhr,
+        iqamaEnabled = iqamaEnabled
     )
 
 // ---------------------------

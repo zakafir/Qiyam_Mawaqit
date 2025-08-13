@@ -1,9 +1,6 @@
-package com.zakafir.data.model
+package com.zakafir.domain.model
 
-import kotlinx.serialization.Serializable
-
-@Serializable
-data class MosqueSearchItemDTO(
+data class MosqueDetails(
     val uuid: String,
     val name: String,
     val type: String,
@@ -35,4 +32,9 @@ data class MosqueSearchItemDTO(
     val jumua3: String? = null,
     val jumuaAsDuhr: Boolean? = null,
     val iqamaEnabled: Boolean? = null
-)
+) {
+    val displayLine: String get() = buildString {
+        append("$label - $localisation")
+    }
+}
+

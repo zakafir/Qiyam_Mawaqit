@@ -5,4 +5,6 @@ sealed class Screen(val route: String) {
     data object Wake : Screen("wake")
     data object History : Screen("history")
     data object Settings : Screen("settings")
+    data object Details : Screen("details")
+
 }

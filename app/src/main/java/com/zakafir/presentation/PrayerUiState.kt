@@ -1,7 +1,6 @@
 package com.zakafir.presentation
 
-import com.zakafir.domain.model.QiyamMode
-import com.zakafir.domain.model.QiyamWindow
+import com.zakafir.domain.model.MosqueDetails
 import com.zakafir.domain.model.YearlyPrayers
 import com.zakafir.presentation.screen.NapConfig
 import com.zakafir.presentation.screen.WorkingUiState
@@ -29,5 +28,6 @@ data class PrayerUiState(
     val allowPostFajr: Boolean = true,
     val latestMorningEnd: String = "07:30",
     val dataSourceLabel: String? = null,
-    val searchResults: List<Pair<String?, String?>> = emptyList(),
+    val searchResults: List<MosqueDetails> = emptyList(),
+    val selectedMosque: MosqueDetails? = null
 )

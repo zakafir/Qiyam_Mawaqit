@@ -32,6 +32,7 @@ import androidx.navigation.NavGraph.Companion.findStartDestination
 import com.zakafir.presentation.PrayerTimesViewModel
 import com.zakafir.presentation.QiyamLog
 import com.zakafir.presentation.navigation.Screen
+import com.zakafir.domain.model.MosqueDetails
 
 
 @Composable
@@ -59,13 +60,15 @@ fun QiyamApp(
                     vmUiState = vmState,
                     onSchedule = { onScheduleTonight(it) },
                     onTestAlarmUi = { nav.navigate(Screen.Wake.route) },
-                    onOpenSettings = { nav.navigate(Screen.Settings.route) },
                     onMasjidIdChange = { sharedViewModel.updateMasjidId(it) },
                     onSelectMasjidSuggestion = { sharedViewModel.selectMasjidSuggestion(it) },
                     onComputeQiyam = { today, tomorrow ->
                         sharedViewModel.computeQiyamWindow(today, tomorrow)
                     },
-                    onModeChange = { sharedViewModel.updateQiyamMode(it) }
+                    onModeChange = { sharedViewModel.updateQiyamMode(it) },
+                    onOpenDetailsScreen = { selectedMosque ->
+                        nav.navigate(Screen.Details.route)
+                    }
                 )
             }
             composable(Screen.Wake.route) {
@@ -78,6 +81,23 @@ fun QiyamApp(
                     onMarkPrayed = { onMarkPrayed(fallbackDate); nav.popBackStack() },
                     onSnooze = { /* no-op in UI-only demo */ }
                 )
+            }
+            composable(Screen.Details.route) {
+                val vmState = sharedViewModel.uiState.collectAsState().value
+
+                vmState.selectedMosque?.let { mosque ->
+                    DetailsScreen(
+                        mosque = mosque,
+                        onCancel = {
+                            sharedViewModel.resetData()
+                            nav.popBackStack()
+                                   },
+                        onConfirm = {
+                            sharedViewModel.refresh()
+                            nav.popBackStack()
+                        }
+                    )
+                }
             }
             composable(Screen.History.route) {
                 val vmState = sharedViewModel.uiState.collectAsState().value
@@ -169,7 +189,6 @@ private fun BottomNavBar(nav: NavHostController) {
         )
     }
 }
-
 
 
 @Preview(showBackground = true)
