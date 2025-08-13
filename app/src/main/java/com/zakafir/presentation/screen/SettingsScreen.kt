@@ -114,14 +114,14 @@ fun SettingsScreen(
             valueRange = 0f..120f
         )
 
-        // Earliest night start
+        // Preferred bedtime (not before)
         TimePickerField(
-            label = "Earliest night start",
+            label = "Preferred bedtime (not before)",
             value = ui.minNightStart,
             onValueChange = onMinNightStartChange
         )
         Text(
-            text = "Do not schedule night sleep before this time, even if Isha is very early.",
+            text = "You prefer to go to bed at this time (e.g., 22:00) or later. • If Isha is earlier than this, you still wait until this time. • If Isha is later than this, the planner may schedule a short nap before Isha and wake you up for prayer.",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -195,6 +195,7 @@ fun SettingsScreen(
 
         val qiyamStart = ui.qiyamWindow?.start
         val todayIsha = ui.yearlyPrayers?.prayerTimes?.getOrNull(0)?.icha
+        val todayMaghrib = ui.yearlyPrayers?.prayerTimes?.getOrNull(0)?.maghreb
         val tomorrowFajr = ui.yearlyPrayers?.prayerTimes?.getOrNull(1)?.fajr
         val tomorrowDhuhr = ui.yearlyPrayers?.prayerTimes?.getOrNull(1)?.dohr
 
@@ -209,6 +210,7 @@ fun SettingsScreen(
         SleepScheduleCard(
             desiredMinutes = desiredSleepMin,
             icha = todayIsha,
+            maghrib = todayMaghrib,
             qiyamStart = qiyamStart,
             fajr = tomorrowFajr,
             dhuhr = tomorrowDhuhr,
@@ -227,6 +229,7 @@ fun SettingsScreen(
 private fun SleepScheduleCard(
     desiredMinutes: Int,
     icha: String?,
+    maghrib: String?,
     qiyamStart: String?,
     fajr: String?,
     dhuhr: String?,
@@ -265,6 +268,32 @@ private fun SleepScheduleCard(
 
             val blocks = mutableListOf<Pair<String, Pair<String, String>>>()
 
+            // Optional pre‑Isha nap if Isha is later than preferred bedtime.
+            // Starts at preferred bedtime (minNightStart) and ends before Maghrib/Isha by a small buffer.
+            var preIshaNapMin = 0
+            if (icha != null && compareHm(icha, minNightStart) > 0) {
+                val napStart = minNightStart
+                // End before Isha by buffer
+                var napEnd = addMinutes(icha, -prayerBuffer) ?: icha
+                // If Maghrib falls inside, end before Maghrib by buffer
+                if (maghrib != null && isBetween(maghrib, napStart, napEnd)) {
+                    val beforeMaghrib = addMinutes(maghrib, -prayerBuffer)
+                    if (beforeMaghrib != null) {
+                        napEnd = minHm(napEnd, beforeMaghrib)
+                    }
+                }
+                if (compareHm(napEnd, napStart) > 0) {
+                    val window = durationBetween(napStart, napEnd)
+                    val take = minOf(window, desiredMinutes) // nap is capped by the remaining later
+                    if (take > 0) {
+                        preIshaNapMin = take
+                        val cappedEnd = addMinutes(napStart, take) ?: napEnd
+                        // Insert the pre‑Isha nap as the first block
+                        blocks += "Pre‑Isha nap" to (napStart to cappedEnd)
+                    }
+                }
+            }
+
             // Isha buffer before sleeping
             val nightStartCandidate = addMinutes(icha, ishaBufferMin) ?: icha
             val nightStart = maxHm(
@@ -275,7 +304,7 @@ private fun SleepScheduleCard(
             blocks += "Night sleep" to (nightStart to qiyamStart)
 
             // We add blocks in priority order and CAP them so total never exceeds the target.
-            var remaining = (desiredMinutes - nightBlockMin).coerceAtLeast(0)
+            var remaining = (desiredMinutes - preIshaNapMin - nightBlockMin).coerceAtLeast(0)
 
             var postFajrMin = 0
             if (allowPostFajr && fajr != null && compareHm(
@@ -429,6 +458,7 @@ private fun isBetween(x: String, start: String, end: String): Boolean {
 }
 
 private fun maxHm(a: String, b: String): String = if (compareHm(a, b) >= 0) a else b
+private fun minHm(a: String, b: String): String = if (compareHm(a, b) <= 0) a else b
 
 private fun parseHm(hm: String): Int {
     // hh:mm → minutes from 00:00
