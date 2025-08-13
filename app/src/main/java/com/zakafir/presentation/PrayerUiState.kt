@@ -7,6 +7,7 @@ import com.zakafir.presentation.screen.WorkingUiState
 
 data class PrayerUiState(
     val masjidId: String = "",
+    val displayedMasjidName: String = "",
     val enableIshaBuffer: Boolean = false,
     val enablePostFajr: Boolean = false,
     val enableNaps: Boolean = false,

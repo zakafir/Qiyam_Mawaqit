@@ -1,6 +1,7 @@
 package com.zakafir.presentation.component
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -15,7 +16,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun StatChip(title: String, value: String, isHighlighted: Boolean = false) {
+fun StatChip(title: String, value: String, isHighlighted: Boolean = false, onClick: () -> Unit = {}) {
     Surface(
         tonalElevation = 2.dp, modifier = Modifier
             .clip(
@@ -23,7 +24,7 @@ fun StatChip(title: String, value: String, isHighlighted: Boolean = false) {
             )
     ) {
         Column(
-            Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+            Modifier.padding(horizontal = 12.dp, vertical = 8.dp).clickable { onClick() },
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(

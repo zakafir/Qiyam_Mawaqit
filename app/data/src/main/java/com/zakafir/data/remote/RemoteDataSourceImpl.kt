@@ -15,10 +15,10 @@ class RemoteDataSourceImpl(
     private val api: PrayerTimesApi
 ) : RemoteDataSource {
 
-    override suspend fun getYearlyPrayersTime(masjidId: String): Result<YearlyPrayers> = runCatching {
+    override suspend fun getYearlyPrayersTime(masjidId: String, displayedMasjidName: String): Result<YearlyPrayers> = runCatching {
         val calendarDto = api.getYearlyCalendar(masjidId)
         val list = mapYearCalendar(calendarDto)
-        PrayersDTO(deducedMasjidId = masjidId, prayerTimesDTO = list).toDomain()
+        PrayersDTO(deducedMasjidId = masjidId, prayerTimesDTO = list, displayedMasjidName = displayedMasjidName).toDomain()
     }
 
     override suspend fun searchMosques(word: String): List<MosqueDetails> {

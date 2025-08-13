@@ -7,7 +7,7 @@ import com.zakafir.domain.model.YearlyPrayers
 import com.zakafir.domain.model.QiyamWindow
 
 interface PrayerTimesRepository {
-    suspend fun getPrayersTime(masjidId: String): Result<YearlyPrayers>
+    suspend fun getPrayersTime(masjidId: String, displayedMasjidName: String): Result<YearlyPrayers>
     suspend fun computeQiyamWindow(mode: QiyamMode, todaysPrayerTimes: PrayerTimes?, tommorowsPrayerTimes: PrayerTimes?): Result<QiyamWindow>
     suspend fun searchMosques(word: String): List<MosqueDetails>
     suspend fun getLastSelectedMasjidId(): String?

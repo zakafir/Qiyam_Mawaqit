@@ -12,15 +12,15 @@ data class PrayerTimes(
 
 data class YearlyPrayers(
     val deducedMasjidId: String,
+    val displayedMasjidName: String,
     val prayerTimes: List<PrayerTimes>
 )
 
 data class QiyamWindow(val start: String, val end: String)
 
-sealed class QiyamMode {
-    data object LastThird : QiyamMode()
-    data object Dawud : QiyamMode()
-    data object AfterIsha : QiyamMode()
-    data object LastHalf : QiyamMode()
-
+sealed class QiyamMode(val text: String) {
+    data object LastThird : QiyamMode("last third")
+    data object Dawud : QiyamMode("Dawud")
+    data object AfterIsha : QiyamMode("after Isha")
+    data object LastHalf : QiyamMode("last half")
 }

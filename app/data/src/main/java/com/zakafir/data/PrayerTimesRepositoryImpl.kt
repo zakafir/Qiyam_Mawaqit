@@ -14,12 +14,12 @@ class PrayerTimesRepositoryImpl(
     private val remoteDataSource: RemoteDataSource
 ) : PrayerTimesRepository {
 
-    override suspend fun getPrayersTime(masjidId: String): Result<YearlyPrayers> {
+    override suspend fun getPrayersTime(masjidId: String, displayedMasjidName: String): Result<YearlyPrayers> {
         // 1) Try local first
         localDataSource.readYearlyPrayers(masjidId)?.let { return Result.success(it) }
 
         // 2) Fetch remote and persist locally
-        val remote = remoteDataSource.getYearlyPrayersTime(masjidId)
+        val remote = remoteDataSource.getYearlyPrayersTime(masjidId, displayedMasjidName)
         if (remote.isFailure) {
             return Result.failure(
                 remote.exceptionOrNull() ?: Exception("Unknown error fetching prayers time")

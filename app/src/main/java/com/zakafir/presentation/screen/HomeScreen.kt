@@ -14,6 +14,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
@@ -31,8 +33,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.text.font.FontWeight
 import com.zakafir.domain.model.MosqueDetails
 import com.zakafir.domain.model.PrayerTimes
 import com.zakafir.domain.model.QiyamMode
@@ -42,7 +46,6 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import com.zakafir.presentation.PrayerUiState
 import com.zakafir.presentation.StreakHeader
-import com.zakafir.presentation.component.HelperCard
 import com.zakafir.presentation.component.StatChip
 import com.zakafir.presentation.component.TonightCard
 import kotlin.run
@@ -248,87 +251,27 @@ fun HomeScreen(
             }
         }
 
-        // Section: Qiyam (Tonight)
+        // Section: Qiyam (Tonight) and Helper / Education merged
         item {
-            vmUiState.qiyamUiState?.let { qiyamUiState ->
-                vmUiState.yearlyPrayers?.let { prayers ->
-                    val list = prayers.prayerTimes
-                    val today = list.getOrNull(0)
-                    TonightCard(
-                        date = today?.date ?: "",
-                        qiyamUiState = qiyamUiState,
-                        onSchedule = onSchedule,
-                        onTestAlarmUi = onTestAlarmUi,
-                        onModeChange = onModeChange
-                    )
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                vmUiState.qiyamUiState?.let { qiyamUiState ->
+                    vmUiState.yearlyPrayers?.let { prayers ->
+                        val list = prayers.prayerTimes
+                        val today = list.getOrNull(0)
+                        TonightCard(
+                            date = today?.date ?: "",
+                            qiyamUiState = qiyamUiState,
+                            onSchedule = onSchedule,
+                            onTestAlarmUi = onTestAlarmUi,
+                            onModeChange = onModeChange
+                        )
+                    }
                 }
             }
         }
-
-        // Helper / Education
-        vmUiState.qiyamUiState?.mode?.let { mode ->
-            item {
-                val helperBody = when (mode) {
-                    is QiyamMode.AfterIsha -> "From after Isha until Fajr — any time in this window counts as Qiyam."
-                    is QiyamMode.LastHalf -> "The last half of the night between Maghrib and Fajr. Preferred if you can wake up in this period."
-                    is QiyamMode.LastThird -> "The final third of the night between Maghrib and Fajr. Your wake time sits near the center, minus a small buffer for wuḍūʾ."
-                    is QiyamMode.Dawud -> "Following the prayer of Dawud: sleep half the night, pray one third, then sleep one sixth. This covers the 4th and 5th sixths of the night."
-                }
-                HelperCard(
-                    title = "What is the $mode mode?",
-                    body = helperBody
-                )
-            }
-        }
     }
 }
 
-
-@Composable
-fun QiyamModeSelector(
-    mode: QiyamMode,
-    onSelect: (QiyamMode) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Row(
-        modifier = modifier.horizontalScroll(rememberScrollState()),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        ModeChip(
-            text = "last third",
-            selected = mode is QiyamMode.LastThird,
-            onClick = { onSelect(QiyamMode.LastThird) }
-        )
-        ModeChip(
-            text = "Dawoud",
-            selected = mode is QiyamMode.Dawud,
-            onClick = { onSelect(QiyamMode.Dawud) }
-        )
-        ModeChip(
-            text = "after Isha",
-            selected = mode is QiyamMode.AfterIsha,
-            onClick = { onSelect(QiyamMode.AfterIsha) }
-        )
-        ModeChip(
-            text = "last half",
-            selected = mode is QiyamMode.LastHalf,
-            onClick = { onSelect(QiyamMode.LastHalf) }
-        )
-    }
-}
-
-@Composable
-private fun ModeChip(
-    text: String,
-    selected: Boolean,
-    onClick: () -> Unit
-) {
-    if (selected) {
-        FilledTonalButton(onClick = onClick) { Text(text) }
-    } else {
-        OutlinedButton(onClick = onClick) { Text(text) }
-    }
-}
 
 @Composable
 private fun SectionTitle(text: String) {

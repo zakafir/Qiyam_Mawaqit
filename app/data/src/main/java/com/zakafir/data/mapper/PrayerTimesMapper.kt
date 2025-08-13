@@ -30,6 +30,7 @@ fun PrayerTimesDTO.toDomain(): PrayerTimes =
 fun PrayersDTO.toDomain(): YearlyPrayers =
     YearlyPrayers(
         deducedMasjidId = this.deducedMasjidId,
+        displayedMasjidName = this.displayedMasjidName,
         prayerTimes = this.prayerTimesDTO.map { it.toDomain() }
     )
 
@@ -85,16 +86,6 @@ fun PrayerTimes.toData(): PrayerTimesDTO =
 fun YearlyPrayers.toData(): PrayersDTO =
     PrayersDTO(
         deducedMasjidId = this.deducedMasjidId,
+        displayedMasjidName = this.displayedMasjidName,
         prayerTimesDTO = this.prayerTimes.map { it.toData() }
-    )
-
-/**
- * Helper to map a domain list back to DTOs, if you need to persist/send it.
- */
-fun List<PrayerTimes>.toData(): List<PrayerTimesDTO> = this.map { it.toData() }
-
-fun QiyamWindowDTO.toDomain(): QiyamWindow =
-    QiyamWindow(
-        start = start,
-        end = end
     )

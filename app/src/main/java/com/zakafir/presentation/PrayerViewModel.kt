@@ -84,7 +84,7 @@ class PrayerTimesViewModel(
 
             // 1) Load prayers as Result
             val prayersResult = try {
-                repo.getPrayersTime(currentMasjidId)
+                repo.getPrayersTime(currentMasjidId, _uiState.value.displayedMasjidName)
             } catch (ce: CancellationException) {
                 Result.failure(ce)
             } catch (t: Throwable) {
