@@ -1,8 +1,8 @@
 package com.zakafir.data
 
-import com.zakafir.domain.LocalDataSource
-import com.zakafir.domain.PrayerTimesRepository
-import com.zakafir.domain.RemoteDataSource
+import com.zakafir.domain.datasource.LocalDataSource
+import com.zakafir.domain.repository.PrayerTimesRepository
+import com.zakafir.domain.datasource.RemoteDataSource
 import com.zakafir.domain.model.MosqueDetails
 import com.zakafir.domain.model.PrayerTimes
 import com.zakafir.domain.model.QiyamLog

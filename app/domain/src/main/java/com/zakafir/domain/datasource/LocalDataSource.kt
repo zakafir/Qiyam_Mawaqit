@@ -1,4 +1,4 @@
-package com.zakafir.domain
+package com.zakafir.domain.datasource
 
 import com.zakafir.domain.model.PrayerTimes
 import com.zakafir.domain.model.QiyamLog

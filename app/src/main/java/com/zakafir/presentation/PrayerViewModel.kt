@@ -2,7 +2,7 @@ package com.zakafir.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.zakafir.domain.PrayerTimesRepository
+import com.zakafir.domain.repository.PrayerTimesRepository
 import com.zakafir.domain.model.PrayerTimes
 import com.zakafir.domain.model.QiyamLog
 import com.zakafir.domain.model.QiyamMode
@@ -335,7 +335,7 @@ class PrayerTimesViewModel(
                     mode = QiyamMode.LastThird,
                     window = null,
                     suggestedWake = prev.qiyamUiState.suggestedWake,
-                    prayed = false,
+                    prayed = null,
                     qiyamHistory = prev.qiyamUiState.qiyamHistory
                 ), // keep current Qiyam window, prayed flag, and history
                 streak = prev.streak,             // keep Qiyam streak

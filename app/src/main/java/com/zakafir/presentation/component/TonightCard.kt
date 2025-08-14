@@ -15,6 +15,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.SegmentedButton
@@ -52,7 +53,7 @@ fun TonightCard(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp)
     ) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Column(Modifier.padding(8.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Text(
                 "Tonight",
                 style = MaterialTheme.typography.titleLarge,
@@ -78,31 +79,31 @@ fun TonightCard(
             }
             Spacer(Modifier.height(4.dp))
             Text(
-                "Duration: ${qiyamUiState.duration}",
-                style = MaterialTheme.typography.bodyMedium
+                "Duration of Qiyam: ${qiyamUiState.duration}",
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.SemiBold
             )
             Spacer(Modifier.height(4.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedButton(onClick = onTestAlarmUi) { Text("Set alarm to start the Qiyam") }
             }
             Spacer(Modifier.height(4.dp))
-            OutlinedButton(
+            FilledTonalButton(
                 onClick = {
                     onLogPrayed(true)
                 },
-                colors = ButtonDefaults.outlinedButtonColors(
-                    containerColor = if (qiyamUiState.prayed) Color(0xFF10B981) else MaterialTheme.colorScheme.surface,
-                    contentColor = if (qiyamUiState.prayed) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
+                colors = ButtonDefaults.filledTonalButtonColors(
+                    containerColor = if (qiyamUiState.prayed == true) Color(0xFF10B981) else MaterialTheme.colorScheme.surface,
+                    contentColor = if (qiyamUiState.prayed == true) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
                 )
             ) { Text("Log Qiyam as Prayed") }
-            println("prayed: ${qiyamUiState.prayed}")
-            OutlinedButton(
+            FilledTonalButton(
                 onClick = {
                     onLogPrayed(false)
                 },
-                colors = ButtonDefaults.outlinedButtonColors(
-                    containerColor = if (!qiyamUiState.prayed) Color.Red else MaterialTheme.colorScheme.surface,
-                    contentColor = if (!qiyamUiState.prayed) MaterialTheme.colorScheme.onError else MaterialTheme.colorScheme.onSurface
+                colors = ButtonDefaults.filledTonalButtonColors(
+                    containerColor = if (qiyamUiState.prayed == false) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.surface,
+                    contentColor = if (qiyamUiState.prayed == false) MaterialTheme.colorScheme.onError else MaterialTheme.colorScheme.onSurface
                 )
             ) { Text("Log Qiyam as Missed") }
         }
@@ -111,7 +112,7 @@ fun TonightCard(
             is QiyamMode.AfterIsha -> "From after Isha until Fajr — any time in this window counts as Qiyam."
             is QiyamMode.LastHalf -> "The last half of the night between Maghrib and Fajr. Preferred if you can wake up in this period."
             is QiyamMode.LastThird -> "The final third of the night between Maghrib and Fajr. Your wake time sits near the center, minus a small buffer for wuḍūʾ."
-            is QiyamMode.Dawud -> "Following the prayer of Dawud: sleep half the night, pray one third, then sleep one sixth. This covers the 4th and 5th sixths of the night."
+            is QiyamMode.Dawud -> "Following the prayer of the prophet Dawud (Alayhi Salam): sleep half the night, pray one third, then sleep one sixth. This covers the 4th and 5th sixths of the night."
         }
         Column(Modifier.padding(14.dp)) {
             Text("What is the ${qiyamUiState.mode.text} mode?", fontWeight = FontWeight.SemiBold)

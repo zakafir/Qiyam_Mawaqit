@@ -5,7 +5,7 @@ import com.zakafir.data.PrayerTimesApi.YearCalendarDTO
 import com.zakafir.data.mapper.toDomain
 import com.zakafir.data.model.PrayerTimesDTO
 import com.zakafir.data.model.PrayersDTO
-import com.zakafir.domain.RemoteDataSource
+import com.zakafir.domain.datasource.RemoteDataSource
 import com.zakafir.domain.model.MosqueDetails
 import com.zakafir.domain.model.YearlyPrayers
 import java.util.Calendar

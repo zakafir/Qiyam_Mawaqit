@@ -14,15 +14,10 @@
         <!-- Customize your theme here. -->
     </style>
 
-    <style name="Theme.Qiyam_Mawaqit.Fullscreen" parent="Theme.Qiyam_Mawaqit">
-        <item name="android:actionBarStyle">@style/Widget.Theme.Qiyam_Mawaqit.ActionBar.Fullscreen
-        </item>
-        <item name="android:windowActionBarOverlay">true</item>
-        <item name="android:windowBackground">@null</item>
-    </style>
-
-    <style name="ThemeOverlay.Qiyam_Mawaqit.FullscreenContainer" parent="">
-        <item name="fullscreenBackgroundColor">@color/light_blue_600</item>
-        <item name="fullscreenTextColor">@color/light_blue_A200</item>
+    <style name="Theme.Qiyam_Mawaqit.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/purple_500</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_app</item>
+        <item name="windowSplashScreenIconBackgroundColor">@color/purple_500</item>
+        <item name="postSplashScreenTheme">@style/Theme.Qiyam_Mawaqit</item>
     </style>
 </resources>

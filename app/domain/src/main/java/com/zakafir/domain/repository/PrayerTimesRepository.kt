@@ -1,4 +1,4 @@
-package com.zakafir.domain
+package com.zakafir.domain.repository
 
 import com.zakafir.domain.model.MosqueDetails
 import com.zakafir.domain.model.PrayerTimes

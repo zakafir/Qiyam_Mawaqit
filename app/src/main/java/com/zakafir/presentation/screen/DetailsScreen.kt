@@ -1,5 +1,6 @@
 package com.zakafir.presentation.screen
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -33,6 +34,10 @@ fun DetailsScreen(
     onCancel: () -> Unit = {},
     onConfirm: () -> Unit = {},
 ) {
+
+    BackHandler {
+        onCancel.invoke()
+    }
     LazyColumn(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
