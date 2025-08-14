@@ -24,11 +24,6 @@ import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -37,12 +32,13 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.zakafir.domain.model.QiyamMode
 import com.zakafir.presentation.QiyamUiState
+import com.zakafir.presentation.add_edit.AddEditAlarmState
 import kotlinx.datetime.LocalDateTime
 
 @Composable
 fun TonightCard(
     qiyamUiState: QiyamUiState,
-    onTestAlarmUi: () -> Unit,
+    onAddAlarm: (AddEditAlarmState) -> Unit,
     onModeChange: (QiyamMode) -> Unit,
     onLogPrayed: (Boolean) -> Unit,
 ) {
@@ -85,7 +81,10 @@ fun TonightCard(
             )
             Spacer(Modifier.height(4.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedButton(onClick = onTestAlarmUi) { Text("Set alarm to start the Qiyam") }
+                OutlinedButton(onClick = {
+                    onAddAlarm.invoke(hours = qiyamUiState.start, alarmId = null)
+                }
+                ) { Text("Set alarm to start the Qiyam") }
             }
             Spacer(Modifier.height(4.dp))
             FilledTonalButton(
@@ -223,7 +222,7 @@ fun TonightCardPreview() {
             suggestedWake = LocalDateTime(2023, 1, 1, 0, 0)
         ),
         onLogPrayed = {},
-        onTestAlarmUi = {},
+        onAddAlarm = {},
         onModeChange = {}
     )
 }

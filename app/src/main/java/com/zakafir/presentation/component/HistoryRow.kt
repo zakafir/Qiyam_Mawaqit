@@ -13,6 +13,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Create
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -30,7 +32,11 @@ import com.zakafir.domain.model.QiyamLog
 
 @Composable
 fun HistoryRow(log: QiyamLog) {
-    val prayed = if (log.prayed) "Prayed" else "Missed"
+    val prayed = when (log.prayed) {
+        true -> "Prayed"
+        false -> "Missed"
+        null -> "Unknown (please modify)"
+    }
     Card(colors = CardDefaults.cardColors(
         containerColor = MaterialTheme.colorScheme.surfaceVariant,
     ),
@@ -40,12 +46,20 @@ fun HistoryRow(log: QiyamLog) {
                 modifier = Modifier
                     .size(40.dp)
                     .clip(CircleShape)
-                    .background(if (log.prayed)
-                        Color(0xFF10B981) else
-                            Color(0xFFEF4444)),
+                    .background(
+                        when {
+                            log.prayed == true -> Color(0xFF10B981) // green
+                            log.prayed == false -> Color(0xFFEF4444) // red
+                            else -> Color(0xFF9CA3AF) // gray for unknown
+                        }
+                    ),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Default.Check, contentDescription = null, tint = Color.White)
+                when {
+                    log.prayed == true -> Icon(Icons.Default.Check, contentDescription = null, tint = Color.White)
+                    log.prayed == false -> Icon(Icons.Default.Close, contentDescription = null, tint = Color.White)
+                    else -> Icon(Icons.Default.Create, contentDescription = null, tint = Color.White)
+                }
             }
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {

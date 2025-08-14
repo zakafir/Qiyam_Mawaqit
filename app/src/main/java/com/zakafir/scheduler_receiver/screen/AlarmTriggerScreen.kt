@@ -1,4 +1,4 @@
-package com.zakafir.scheduler_receiver
+package com.zakafir.scheduler_receiver.screen
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.sp
 import com.zakafir.data.core.util.formatHourMinute
 import com.zakafir.domain.model.Alarm
 import com.zakafir.presentation.ui.theme.Qiyam_MawaqitTheme
+import com.zakafir.presentation.util.getDummyAlarm
 import com.zakafir.qiyam_mawaqit.R
 
 @Composable
@@ -114,19 +115,3 @@ private fun AlarmTriggerScreenPreview() {
         )
     }
 }
-
-fun getDummyAlarm(
-    name: String,
-    hour: Int,
-    minute: Int,
-    enabled: Boolean
-) = Alarm(
-    name = name,
-    hour = hour,
-    minute = minute,
-    enabled = enabled,
-    repeatDays = setOf(),
-    volume = 70,
-    ringtoneUri = "",
-    vibrate = true
-)

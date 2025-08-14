@@ -1,7 +1,7 @@
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
-    id("org.jetbrains.kotlin.plugin.serialization") version "2.2.0" // match your Kotlin version
+    alias(libs.plugins.kotlinx.serialization)
     alias(libs.plugins.google.devtools.ksp)
 }
 android {

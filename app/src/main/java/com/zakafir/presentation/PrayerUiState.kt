@@ -3,7 +3,7 @@ package com.zakafir.presentation
 import com.zakafir.domain.model.MosqueDetails
 import com.zakafir.domain.model.YearlyPrayers
 import com.zakafir.presentation.screen.NapConfig
-import com.zakafir.presentation.screen.WorkingUiState
+import com.zakafir.presentation.WorkingUiState
 
 data class PrayerUiState(
     val masjidId: String = "",

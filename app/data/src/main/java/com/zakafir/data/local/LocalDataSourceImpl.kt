@@ -233,7 +233,7 @@ class LocalDataSourceImpl(
             val dateStr = String.format("%04d-%02d-%02d", year, month, day)
 
             val log = historyMap[dateStr]
-            if (log == null || !log.prayed) {
+            if (log == null || log.prayed == false) {
                 break
             }
             streak++

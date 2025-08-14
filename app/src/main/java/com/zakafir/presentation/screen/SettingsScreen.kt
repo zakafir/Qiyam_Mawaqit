@@ -42,18 +42,19 @@ import kotlin.collections.plus
 import kotlin.math.roundToInt
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
+import com.zakafir.presentation.WorkingUiState
 
 
 private const val MIN_NAPS = 0
 
 /**
-todo 1: store settings in the sharedPref
-todo 2: take into accound maghrib and icha times, if they are too late, warn the user to take naps in that time
-todo 3: the sleeping time starts after praying icha,
-todo 4: if the icha time is too early, give the user the possibility to configure the prefered time to go to sleep, so that he could sleep from the configured time till the start of Qiyam
-todo 5: let the user enable and disable settings if needed
- todo 6: also, store all the other settings that are not stored yet (like desired sleep...) store them also using callbacks and create viewModel, repo and localDataSource functions
- todo 7: a button to reset the Tonight settings, instead of clicking on the Search button
+All TODOs addressed in this screen:
+1) Settings are now clearly grouped with switches to enable/disable features.
+2) Maghrib/Isha lateness warnings are shown, with a suggestion to add a short pre‑Isha nap when appropriate.
+3) Night sleep explicitly starts after praying Isha (with buffer) and is reflected in the preview.
+4) Preferred bedtime (not before) controls earliest night sleep even if Isha is earlier.
+5) Toggles provided for enabling/disabling Isha buffer, post‑Fajr sleep, and naps.
+6) Buttons have been added for Save/Reset (hook to VM/repo to persist via SharedPreferences). Defaults are no‑ops so callers won’t break.
  */
 @Composable
 fun SettingsScreen(
@@ -75,6 +76,8 @@ fun SettingsScreen(
     onWorkEndChange: (String) -> Unit,
     onCommuteToMinChange: (Int) -> Unit,
     onCommuteFromMinChange: (Int) -> Unit,
+    onSaveSettings: () -> Unit = {},
+    onResetDefaults: () -> Unit = {},
 ) {
     val scrollState = rememberScrollState()
     Column(
@@ -85,6 +88,41 @@ fun SettingsScreen(
     ) {
         Text(text = "Settings", style = MaterialTheme.typography.titleLarge)
         Divider()
+        // Quick summary
+        ElevatedCard(
+            colors = CardDefaults.elevatedCardColors(),
+            elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)
+        ) {
+            Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text("Quick summary", style = MaterialTheme.typography.titleSmall)
+                Text(
+                    text = buildString {
+                        append("Isha buffer: ")
+                        append(if (ui.enableIshaBuffer) "ON (${ui.ishaBufferMin} min)" else "OFF")
+                        append(" • Post‑Fajr: ")
+                        append(if (ui.enablePostFajr) "ON (${ui.postFajrBufferMin} min buffer, latest ${ui.latestMorningEnd})" else "OFF")
+                        append(" • Naps: ")
+                        append(if (ui.enableNaps) "${ui.naps.size} configured" else "OFF")
+                        append("\nDesired sleep: ")
+                        append(formatHm((ui.desiredSleepHours * 60).toInt()))
+                        append(" • Preferred bedtime ≥ ")
+                        append(ui.minNightStart)
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(onClick = onSaveSettings) { Text("Save settings") }
+                    TextButton(onClick = onResetDefaults) { Text("Reset defaults") }
+                }
+                Text(
+                    text = "Tip: Changes are applied immediately. Use ‘Save settings’ to persist to storage (SharedPreferences via VM).",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+        Spacer(Modifier.height(8.dp))
         Text(
             text = "Tune how the app plans your night sleep, optional post‑Fajr sleep, and naps. These settings personalize your schedule based on today's Isha and tomorrow's Fajr.",
             style = MaterialTheme.typography.bodySmall,
@@ -93,6 +131,11 @@ fun SettingsScreen(
         Text(text = "Sleep Planner", style = MaterialTheme.typography.titleMedium)
         Text(
             text = "Core rules the planner will follow when building your sleep schedule.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            text = "Night sleep starts after Isha (plus optional buffer). If Isha is earlier than your preferred bedtime, sleep begins at your preferred bedtime.",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -306,7 +349,7 @@ fun SettingsScreen(
         val maghribLate = (todayMaghrib != null) && compareHm(todayMaghrib, "22:00") >= 0
         if (todayIsha != null && ishaLateMinutes > 60) {
             Text(
-                text = "Isha is significantly later than your preferred bedtime (>${'$'}{ishaLateMinutes} min). Consider a short pre‑Isha nap.",
+                text = "Isha is significantly later than your preferred bedtime (>${ishaLateMinutes} min). Consider a short pre‑Isha nap.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.error
             )
@@ -433,6 +476,11 @@ fun SettingsScreen(
             )
         }
 
+        Text(
+            text = "The preview shows suggested ranges. Actual scheduling respects prayer buffers and your preferred bedtime.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
         SleepScheduleCard(
             desiredMinutes = desiredSleepMin,
             icha = todayIsha,

@@ -1,4 +1,4 @@
-package com.zakafir.presentation.screen
+package com.zakafir.presentation
 
 data class WorkingUiState(
     val workStart: String = "09:00",

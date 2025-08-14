@@ -3,10 +3,8 @@ package com.zakafir.presentation.screen
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBox
-import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.filled.Phone
-import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -19,42 +17,48 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import kotlinx.datetime.LocalDateTime
 import org.koin.androidx.compose.koinViewModel
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.toRoute
+import com.zakafir.data.core.domain.ringtone.NameAndUri
 import com.zakafir.presentation.PrayerTimesViewModel
-import com.zakafir.presentation.navigation.Screen
-
+import com.zakafir.presentation.add_edit.AddEditAlarmAction
+import com.zakafir.presentation.add_edit.AddEditAlarmScreenRoot
+import com.zakafir.presentation.add_edit.AddEditAlarmViewModel
+import com.zakafir.presentation.list.AlarmListScreenRoot
+import com.zakafir.presentation.navigation.RootGraph
+import com.zakafir.presentation.ringtone_list.RingtoneListScreenRoot
+import com.zakafir.presentation.ringtone_list.RingtoneListViewModel
+import com.zakafir.presentation.util.composableWithTransitions
+import org.koin.core.parameter.parametersOf
 
 @Composable
 fun QiyamApp(
 ) {
-    val nav = rememberNavController()
+    val navController = rememberNavController()
     val sharedViewModel: PrayerTimesViewModel = koinViewModel()
-    val context = LocalContext.current
     Scaffold(
-        bottomBar = { BottomNavBar(nav) }
+        bottomBar = { BottomNavBar(navController) }
     ) { padding ->
         NavHost(
-            navController = nav,
-            startDestination = Screen.Home.route,
-            modifier = Modifier.padding(padding)
+            navController = navController,
+            startDestination = RootGraph.Home,
+            modifier = Modifier.padding(padding),
         ) {
-            composable(Screen.Home.route) {
+            composableWithTransitions<RootGraph.Home> {
                 val vmState = sharedViewModel.uiState.collectAsState().value
                 HomeScreen(
                     vmUiState = vmState,
-                    onTestAlarmUi = { nav.navigate(Screen.Wake.route) },
+                    onAddAlarm = {
+                        navController.navigate(RootGraph.AlarmDetail(it, isNewQiyam = true))
+                                 },
                     onMasjidIdChange = { sharedViewModel.updateMasjidId(it) },
                     onSelectMasjidSuggestion = { sharedViewModel.selectMasjidSuggestion(it) },
                     onComputeQiyam = { today, tomorrow ->
@@ -62,20 +66,12 @@ fun QiyamApp(
                     },
                     onModeChange = { sharedViewModel.updateQiyamMode(it) },
                     onOpenDetailsScreen = { selectedMosque ->
-                        nav.navigate(Screen.Details.route)
+                        navController.navigate(RootGraph.Details)
                     },
                     onLogPrayed = { prayed -> sharedViewModel.logQiyamForToday(prayed) },
                 )
             }
-            composable(Screen.Wake.route) {
-                val vmState = sharedViewModel.uiState.collectAsState().value
-                val fallbackTime = LocalDateTime(2025, 1, 1, 3, 30)
-                WakeScreen(
-                    time = vmState.qiyamUiState?.suggestedWake ?: fallbackTime,
-                    onSnooze = { /* no-op in UI-only demo */ }
-                )
-            }
-            composable(Screen.Details.route) {
+            composableWithTransitions<RootGraph.Details> {
                 val vmState = sharedViewModel.uiState.collectAsState().value
 
                 vmState.selectedMosque?.let { mosque ->
@@ -83,16 +79,16 @@ fun QiyamApp(
                         mosque = mosque,
                         onCancel = {
                             sharedViewModel.resetData()
-                            nav.popBackStack()
+                            navController.popBackStack()
                         },
                         onConfirm = {
                             sharedViewModel.refresh()
-                            nav.popBackStack()
+                            navController.popBackStack()
                         }
                     )
                 }
             }
-            composable(Screen.History.route) {
+            composableWithTransitions<RootGraph.History> {
                 val vmState = sharedViewModel.uiState.collectAsState().value
                 LaunchedEffect(Unit) {
                     sharedViewModel.loadQiyamHistory()
@@ -110,7 +106,7 @@ fun QiyamApp(
                     )
                 }
             }
-            composable(Screen.Settings.route) {
+            composableWithTransitions<RootGraph.Settings> {
                 val vmState = sharedViewModel.uiState.collectAsState().value
 
                 SettingsScreen(
@@ -143,6 +139,55 @@ fun QiyamApp(
                     },
                 )
             }
+            composableWithTransitions<RootGraph.AlarmList> {
+                AlarmListScreenRoot(
+                    navigateToAddEditScreen = {
+                        navController.navigate(RootGraph.AlarmDetail(it))
+                    }
+                )
+            }
+
+            composableWithTransitions<RootGraph.AlarmDetail> { entry ->
+                val alarmDetailRoute: RootGraph.AlarmDetail = entry.toRoute()
+                val viewModel: AddEditAlarmViewModel = koinViewModel { parametersOf(alarmDetailRoute.alarmId) }
+                if (alarmDetailRoute.isNewQiyam) {
+                    LaunchedEffect(Unit) {
+                        viewModel.onAction(AddEditAlarmAction.OnSetAlarmForQiyam(
+
+                        ))
+                    }
+                }
+                LaunchedEffect(Unit) {
+                    val nameAndUri = entry.savedStateHandle.get<NameAndUri>("selectedRingtone") ?: return@LaunchedEffect
+                    viewModel.onAction(AddEditAlarmAction.OnAlarmRingtoneChange(nameAndUri))
+                }
+
+                AddEditAlarmScreenRoot(
+                    navigateBack = {
+                        navController.navigateUp()
+                    },
+                    navigateToRingtoneList = {
+                        val (name, uri) = viewModel.state.ringtone ?: Pair(null, null)
+                        navController.navigate(RootGraph.RingtoneList(name, uri))
+                    },
+                    viewModel = viewModel
+                )
+            }
+
+            composableWithTransitions<RootGraph.RingtoneList> { entry ->
+                val ringtoneListRoute: RootGraph.RingtoneList = entry.toRoute()
+                val viewModel: RingtoneListViewModel = koinViewModel { parametersOf(ringtoneListRoute.getNameAndUri()) }
+
+                RingtoneListScreenRoot(
+                    onRingtoneSelected = {
+                        navController.previousBackStackEntry?.savedStateHandle?.set("selectedRingtone", it)
+                    },
+                    navigateBack = {
+                        navController.navigateUp()
+                    },
+                    viewModel = viewModel
+                )
+            }
         }
     }
 }
@@ -150,14 +195,20 @@ fun QiyamApp(
 @Composable
 private fun BottomNavBar(nav: NavHostController) {
     val navBackStackEntry by nav.currentBackStackEntryAsState()
-    val currentRoute = navBackStackEntry?.destination?.route
+    // Parse the current destination into our sealed route type (may be null for unknown routes)
+    val currentRoute: RootGraph? = try {
+        navBackStackEntry?.toRoute<RootGraph>()
+    } catch (_: Exception) {
+        null
+    }
 
-    data class Tab(val route: String, val icon: ImageVector, val label: String)
+    data class Tab(val route: RootGraph, val icon: ImageVector, val label: String)
 
     val tabs = listOf(
-        Tab(Screen.Home.route, Icons.Default.AccountBox, "Tonight"),
-        Tab(Screen.History.route, Icons.Default.DateRange, "History"),
-        Tab(Screen.Settings.route, Icons.Default.Settings, "Settings"),
+        Tab(RootGraph.Home, Icons.Default.AccountBox, "Tonight"),
+        Tab(RootGraph.History, Icons.Default.DateRange, "History"),
+        Tab(RootGraph.AlarmList, Icons.Default.Notifications, "Alarms"),
+        Tab(RootGraph.Settings, Icons.Default.Settings, "Settings"),
     )
 
     NavigationBar {

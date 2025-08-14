@@ -18,7 +18,7 @@ data class YearlyPrayers(
 
 data class QiyamWindow(val start: String, val end: String)
 
-data class QiyamLog(val date: String, val prayed: Boolean)
+data class QiyamLog(val date: String, val prayed: Boolean?)
 
 sealed class QiyamMode(val text: String) {
     data object LastThird : QiyamMode("Last third")

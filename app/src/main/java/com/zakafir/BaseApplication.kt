@@ -10,6 +10,7 @@ import com.zakafir.data.core.database.di.featureAlarmDataModule
 import com.zakafir.data.core.ringtone.di.coreRingtoneModule
 import com.zakafir.domain.model.AlarmConstants
 import com.zakafir.presentation.PresentationModule
+import com.zakafir.presentation.di.featureAlarmPresentationModule
 import com.zakafir.scheduler_receiver.di.appModule
 import com.zakafir.scheduler_receiver.di.featureAlarmSchedulerReceiverModule
 import kotlinx.coroutines.CoroutineScope
@@ -36,10 +37,8 @@ class BaseApplication : Application() {
             coreDatabaseModule,
             coreRingtoneModule,
             featureAlarmDataModule,
-            featureAlarmSchedulerReceiverModule
-
-
-            //DomainModule.getModule(),
+            featureAlarmSchedulerReceiverModule,
+            featureAlarmPresentationModule
         )
         startKoin {
             androidLogger()
