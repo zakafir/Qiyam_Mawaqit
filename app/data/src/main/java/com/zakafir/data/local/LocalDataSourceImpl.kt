@@ -12,10 +12,13 @@ import java.io.File
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.encodeToString
 import androidx.core.content.edit
+import com.zakafir.data.model.NapConfigDTO
 import com.zakafir.data.model.QiyamLogDTO
+import com.zakafir.domain.model.NapConfig
 import com.zakafir.domain.model.QiyamLog
 import com.zakafir.domain.model.QiyamMode
 import java.util.Calendar
+import kotlin.collections.toMutableList
 
 class LocalDataSourceImpl(
     private val context: Context,
@@ -128,6 +131,80 @@ class LocalDataSourceImpl(
 
     override fun saveLastSelectedMasjidName(masjidId: String) {
         prefs.edit { putString("selected_masjid_name", masjidId) }
+    }
+
+    override fun updatePostFajrBuffer(v: Int) {
+        setPostFajrBufferMin(v.coerceAtLeast(0))
+    }
+
+    override fun updateIshaBuffer(v: Int) {
+        setIshaBufferMin(v.coerceAtLeast(0))
+    }
+
+    override fun updateMinNightStart(v: String) {
+        setMinNightStart(v)
+    }
+
+    override fun updatePostFajrCutoff(v: String) {
+        setDisallowPostFajrIfFajrAfter(v)
+    }
+
+    override fun updateNap(index: Int, config: NapConfig) {
+        val serialized = prefs.getString("naps_serialized", null)
+
+        val current = if (serialized.isNullOrBlank()) {
+            mutableListOf<NapConfigDTO>()
+        } else {
+            runCatching {
+                json.decodeFromString<List<NapConfigDTO>>(serialized).toMutableList()
+            }.getOrElse { mutableListOf() }
+        }
+
+        if (index in current.indices) {
+            current[index] = config.toData() // store as DATA DTO
+            setNapsSerialized(json.encodeToString(current))
+        }
+    }
+
+    override fun addNap() {
+        val serialized = prefs.getString("naps_serialized", null)
+        val current = if (serialized.isNullOrBlank()) mutableListOf<NapConfigDTO>() else runCatching {
+            json.decodeFromString<List<NapConfigDTO>>(serialized).toMutableList()
+        }.getOrElse { mutableListOf() }
+        if (current.size < 3) {
+            current.add(NapConfigDTO(start = "00:00", durationMin = 0))
+            val out = json.encodeToString(current)
+            setNapsSerialized(out)
+        }
+    }
+
+    override fun updateDesiredSleepHours(v: Float) {
+        val minutes = (v * 60f).toInt().coerceIn(240, 720)
+        setDesiredSleepMinutes(minutes)
+    }
+
+    override fun updateBufferMinutes(v: Int) {
+        prefs.edit { putInt("buffer_minutes", v.coerceAtLeast(0)) }
+    }
+
+    override fun updateAllowPostFajr(allow: Boolean) {
+        prefs.edit { putBoolean("allow_post_fajr", allow) }
+    }
+
+    override fun updateLatestMorningEnd(v: String) {
+        setLatestMorningEnd(v)
+    }
+
+    override fun removeNap(index: Int) {
+        val serialized = prefs.getString("naps_serialized", null)
+        val current = if (serialized.isNullOrBlank()) mutableListOf<NapConfigDTO>() else runCatching {
+            json.decodeFromString<List<NapConfigDTO>>(serialized).toMutableList()
+        }.getOrElse { mutableListOf() }
+        if (index in current.indices) {
+            current.removeAt(index)
+            val out = json.encodeToString(current)
+            setNapsSerialized(out)
+        }
     }
 
     override fun enableNaps(enabled: Boolean) {

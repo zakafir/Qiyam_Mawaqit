@@ -7,7 +7,6 @@ import com.zakafir.domain.model.PrayerTimes
 import com.zakafir.domain.model.QiyamLog
 import com.zakafir.domain.model.QiyamMode
 import com.zakafir.domain.model.QiyamWindow
-import com.zakafir.presentation.screen.NapConfig
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -24,14 +23,13 @@ import kotlinx.datetime.toLocalDateTime
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.days
 import kotlinx.datetime.toInstant
-import kotlin.collections.plus
 
 class PrayerTimesViewModel(
     private val repo: PrayerTimesRepository
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(PrayerUiState())
-    val uiState: StateFlow<PrayerUiState> = _uiState.asStateFlow()
+    private val _uiState = MutableStateFlow(GlobalUiState())
+    val uiState: StateFlow<GlobalUiState> = _uiState.asStateFlow()
     private val _masjidQuery = MutableStateFlow("")
     val searchText: StateFlow<String> = _masjidQuery.asStateFlow()
 
@@ -111,7 +109,12 @@ class PrayerTimesViewModel(
                         }
                     }
                     .onFailure { e ->
-                        _uiState.update { it.copy(error = e.message ?: "Unknown error", yearlyPrayers = null) }
+                        _uiState.update {
+                            it.copy(
+                                error = e.message ?: "Unknown error",
+                                yearlyPrayers = null
+                            )
+                        }
                     }
 
                 // Compute ancillary data while still loading
@@ -124,14 +127,18 @@ class PrayerTimesViewModel(
                 val day = calendar.get(java.util.Calendar.DAY_OF_MONTH)
                 val dateStr = String.format("%04d-%02d-%02d", year, month, day)
 
-                val todayPrayed = runCatching { repo.getQiyamStatusForDate(dateStr) }.getOrDefault(false)
+                val todayPrayed =
+                    runCatching { repo.getQiyamStatusForDate(dateStr) }.getOrDefault(false)
                 val history = runCatching { repo.getQiyamHistory() }.getOrDefault(emptyList())
 
                 // Apply all secondary updates together before clearing loader
                 _uiState.update { s ->
                     s.copy(
                         streak = streak,
-                        qiyamUiState = s.qiyamUiState?.copy(prayed = todayPrayed, qiyamHistory = history)
+                        qiyamUiState = s.qiyamUiState?.copy(
+                            prayed = todayPrayed,
+                            qiyamHistory = history
+                        )
                     )
                 }
             } finally {
@@ -143,7 +150,9 @@ class PrayerTimesViewModel(
         }
     }
 
-    fun onPullToRefresh() { refresh(isUserRefresh = true) }
+    fun onPullToRefresh() {
+        refresh(isUserRefresh = true)
+    }
 
     fun updateSearchText(text: String) {
         _masjidQuery.value = text
@@ -195,7 +204,11 @@ class PrayerTimesViewModel(
                     }
 
                     _uiState.update { s ->
-                        val ui = convertToQiyamUi(qiyam, mode = mode, bufferMinutes = s.bufferMinutes)
+                        val ui = convertToQiyamUi(
+                            qiyam,
+                            mode = mode,
+                            bufferMinutesForWuduaa = s.bufferMinutesForWuduaa
+                        )
                             .copy(prayed = preservedPrayed, qiyamHistory = preservedHistory)
                         s.copy(qiyamUiState = ui, error = null)
                     }
@@ -214,7 +227,7 @@ class PrayerTimesViewModel(
     private fun convertToQiyamUi(
         qiyam: QiyamWindow,
         mode: QiyamMode,
-        bufferMinutes: Int
+        bufferMinutesForWuduaa: Int
     ): QiyamUiState {
         val today: LocalDate =
             Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
@@ -248,7 +261,7 @@ class PrayerTimesViewModel(
         val endDateTime = endInstant.toLocalDateTime(tz)
 
         // Suggested wake = a few minutes before the start (buffer)
-        val suggestedWake = startInstant.minus(bufferMinutes.minutes).toLocalDateTime(tz)
+        val suggestedWake = startInstant.minus(bufferMinutesForWuduaa.minutes).toLocalDateTime(tz)
 
         // Duration as string (handles overnight)
         val durationMinutes = ((endInstant.epochSeconds - startInstant.epochSeconds) / 60).toInt()
@@ -266,68 +279,11 @@ class PrayerTimesViewModel(
         )
     }
 
-    fun updateDesiredSleepHours(v: Float) {
-        _uiState.update { it.copy(desiredSleepHours = v.coerceIn(4f, 12f)) }
-    }
-
-    fun updatePostFajrBuffer(v: Int) {
-        _uiState.update { it.copy(postFajrBufferMin = v.coerceIn(0, 120)) }
-    }
-
-    fun updateIshaBuffer(v: Int) {
-        _uiState.update { it.copy(ishaBufferMin = v.coerceIn(0, 120)) }
-    }
-
-    fun updateMinNightStart(v: String) {
-        _uiState.update { it.copy(minNightStart = v) }
-    }
-
-    fun updatePostFajrCutoff(v: String) {
-        _uiState.update { it.copy(disallowPostFajrIfFajrAfter = v) }
-    }
-
-    fun updateNap(index: Int, config: NapConfig) {
-        _uiState.update { s ->
-            val list = s.naps.toMutableList()
-            if (index in list.indices) list[index] = config
-            s.copy(naps = list)
-        }
-    }
-
-    fun addNap() {
-        _uiState.update { s ->
-            val current = s.naps
-            val nextIndex = current.size + 1
-            val defaultStart = when (nextIndex) {
-                1 -> "12:00"
-                2 -> "16:00"
-                3 -> "18:00"
-                else -> "16:00"
-            }
-            val updated = (current + NapConfig(start = defaultStart, durationMin = 0)).take(3)
-            s.copy(naps = updated)
-        }
-    }
-
-    fun removeNap(index: Int) {
-        _uiState.update { s ->
-            val list = s.naps.toMutableList()
-            if (index in list.indices) {
-                list.removeAt(index)
-            }
-            s.copy(naps = list)
-        }
-    }
-
-    fun updateLatestMorningEnd(v: String) {
-        _uiState.update { it.copy(latestMorningEnd = v) }
-    }
-
     fun updateMasjidId(v: String) {
         if (v.isBlank()) {
             // Reset everything to initial state EXCEPT Qiyam-related state
             val prev = _uiState.value
-            _uiState.value = PrayerUiState(
+            _uiState.value = GlobalUiState(
                 qiyamUiState = prev.qiyamUiState?.copy(
                     start = "",
                     end = "",
@@ -339,7 +295,7 @@ class PrayerTimesViewModel(
                     qiyamHistory = prev.qiyamUiState.qiyamHistory
                 ), // keep current Qiyam window, prayed flag, and history
                 streak = prev.streak,             // keep Qiyam streak
-                bufferMinutes = prev.bufferMinutes // keep buffer used for suggested wake time
+                bufferMinutesForWuduaa = prev.bufferMinutesForWuduaa // keep buffer used for suggested wake time
             )
             _masjidQuery.value = ""
             return
@@ -356,7 +312,7 @@ class PrayerTimesViewModel(
         _uiState.update {
             it.copy(
                 masjidId = slug,
-                selectedMosque = it.searchResults.find { m -> m.slug == slug }
+                selectedMasjid = it.searchResults.find { m -> m.slug == slug }
             )
         }
         viewModelScope.launch { runCatching { repo.saveLastSelectedMasjidId(slug) } }
@@ -397,7 +353,11 @@ class PrayerTimesViewModel(
                             runCatching { repo.getQiyamHistory() }.getOrDefault(emptyList())
                         }
                         _uiState.update { s ->
-                            val ui = convertToQiyamUi(q, mode = it, bufferMinutes = s.bufferMinutes)
+                            val ui = convertToQiyamUi(
+                                q,
+                                mode = it,
+                                bufferMinutesForWuduaa = s.bufferMinutesForWuduaa
+                            )
                                 .copy(prayed = preservedPrayed, qiyamHistory = preservedHistory)
                             s.copy(qiyamUiState = ui, error = null)
                         }
@@ -409,52 +369,8 @@ class PrayerTimesViewModel(
         }
     }
 
-    fun enableNaps(enabled: Boolean) {
-        _uiState.update { s -> s.copy(enableNaps = enabled) }
-        viewModelScope.launch { runCatching { repo.enableNaps(enabled) } }
-    }
-
-    fun enablePostFajr(enabled: Boolean) {
-        _uiState.update { s -> s.copy(enablePostFajr = enabled) }
-        viewModelScope.launch { runCatching { repo.enablePostFajr(enabled) } }
-    }
-
-    fun enableIshaBuffer(enabled: Boolean) {
-        _uiState.update { s -> s.copy(enableIshaBuffer = enabled) }
-        viewModelScope.launch { runCatching { repo.enableIshaBuffer(enabled) } }
-    }
-
-    fun updateWorkStart(it: String) {
-        _uiState.update { s -> s.copy(workState = s.workState.copy(workStart = it)) }
-        viewModelScope.launch { runCatching { repo.updateWorkStart(it) } }
-
-    }
-
-    fun updateWorkEnd(it: String) {
-        _uiState.update { s -> s.copy(workState = s.workState.copy(workEnd = it)) }
-        viewModelScope.launch { runCatching { repo.updateWorkEnd(it) } }
-    }
-
-    fun updateCommuteToMin(it: Int) {
-        _uiState.update { s -> s.copy(workState = s.workState.copy(commuteToMin = it.coerceAtLeast(0))) }
-        viewModelScope.launch { runCatching { repo.updateCommuteToMin(it) } }
-    }
-
-    fun updateCommuteFromMin(it: Int) {
-        _uiState.update { s ->
-            s.copy(
-                workState = s.workState.copy(
-                    commuteFromMin = it.coerceAtLeast(
-                        0
-                    )
-                )
-            )
-        }
-        viewModelScope.launch { runCatching { repo.updateCommuteFromMin(it) } }
-    }
-
     fun resetData() {
-        _uiState.value = PrayerUiState()
+        _uiState.value = GlobalUiState()
         _masjidQuery.value = ""
         lastTodays = null
         lastTomorrows = null
@@ -494,41 +410,42 @@ class PrayerTimesViewModel(
 
     fun loadQiyamHistory() {
         viewModelScope.launch {
-            val history: List<QiyamLog> = runCatching { repo.getQiyamHistory() }.getOrDefault(emptyList())
+            val history: List<QiyamLog> =
+                runCatching { repo.getQiyamHistory() }.getOrDefault(emptyList())
             _uiState.update { state ->
                 state.copy(qiyamUiState = state.qiyamUiState?.copy(qiyamHistory = history))
             }
         }
     }
 
-fun updateQiyamLog(date: String, prayed: Boolean) {
-    viewModelScope.launch {
-        // Persist
-        runCatching { repo.logQiyam(date, prayed) }
+    fun updateQiyamLog(date: String, prayed: Boolean) {
+        viewModelScope.launch {
+            // Persist
+            runCatching { repo.logQiyam(date, prayed) }
 
-        // Compute today's date string to know if we should reflect the toggle immediately
-        val calendar = java.util.Calendar.getInstance()
-        val year = calendar.get(java.util.Calendar.YEAR)
-        val month = calendar.get(java.util.Calendar.MONTH) + 1
-        val day = calendar.get(java.util.Calendar.DAY_OF_MONTH)
-        val todayStr = String.format("%04d-%02d-%02d", year, month, day)
+            // Compute today's date string to know if we should reflect the toggle immediately
+            val calendar = java.util.Calendar.getInstance()
+            val year = calendar.get(java.util.Calendar.YEAR)
+            val month = calendar.get(java.util.Calendar.MONTH) + 1
+            val day = calendar.get(java.util.Calendar.DAY_OF_MONTH)
+            val todayStr = String.format("%04d-%02d-%02d", year, month, day)
 
-        // Pull derived data
-        val streak = runCatching { repo.getCurrentStreak() }.getOrDefault(_uiState.value.streak)
-        val history = runCatching { repo.getQiyamHistory() }.getOrDefault(emptyList())
-            .sortedByDescending { it.date }
+            // Pull derived data
+            val streak = runCatching { repo.getCurrentStreak() }.getOrDefault(_uiState.value.streak)
+            val history = runCatching { repo.getQiyamHistory() }.getOrDefault(emptyList())
+                .sortedByDescending { it.date }
 
-        // Update state atomically
-        _uiState.update { s ->
-            val currentQiyam = s.qiyamUiState
-            s.copy(
-                streak = streak,
-                qiyamUiState = currentQiyam?.copy(
-                    prayed = if (date == todayStr) prayed else currentQiyam.prayed,
-                    qiyamHistory = history
+            // Update state atomically
+            _uiState.update { s ->
+                val currentQiyam = s.qiyamUiState
+                s.copy(
+                    streak = streak,
+                    qiyamUiState = currentQiyam?.copy(
+                        prayed = if (date == todayStr) prayed else currentQiyam.prayed,
+                        qiyamHistory = history
+                    )
                 )
-            )
+            }
         }
     }
-}
 }

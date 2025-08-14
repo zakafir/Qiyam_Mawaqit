@@ -30,6 +30,7 @@ import androidx.navigation.toRoute
 import com.zakafir.data.core.domain.ringtone.NameAndUri
 import com.zakafir.presentation.PrayerTimesViewModel
 import com.zakafir.presentation.QiyamAlarm
+import com.zakafir.presentation.SettingsViewModel
 import com.zakafir.presentation.add_edit.AddEditAlarmAction
 import com.zakafir.presentation.add_edit.AddEditAlarmScreenRoot
 import com.zakafir.presentation.add_edit.AddEditAlarmViewModel
@@ -56,7 +57,7 @@ fun QiyamApp(
             composableWithTransitions<RootGraph.Home> {
                 val vmState = sharedViewModel.uiState.collectAsState().value
                 HomeScreen(
-                    vmUiState = vmState,
+                    globalUiState = vmState,
                     onAddQiyamAlarm = {
                         navController.navigate(
                             RootGraph.AlarmDetail(
@@ -82,7 +83,7 @@ fun QiyamApp(
             composableWithTransitions<RootGraph.Details> {
                 val vmState = sharedViewModel.uiState.collectAsState().value
 
-                vmState.selectedMosque?.let { mosque ->
+                vmState.selectedMasjid?.let { mosque ->
                     DetailsScreen(
                         mosque = mosque,
                         onCancel = {
@@ -104,7 +105,6 @@ fun QiyamApp(
                 vmState.qiyamUiState?.qiyamHistory?.let { history ->
                     HistoryScreen(
                         streak = vmState.streak,
-                        weeklyGoal = vmState.weeklyGoal,
                         isRefreshing = vmState.isRefreshing,
                         history = history,
                         onRefresh = { sharedViewModel.onPullToRefresh() },
@@ -115,40 +115,46 @@ fun QiyamApp(
                 }
             }
             composableWithTransitions<RootGraph.Settings> {
-                val vmState = sharedViewModel.uiState.collectAsState().value
+                val settingsViewModel: SettingsViewModel = koinViewModel()
+                val settingsUiState = settingsViewModel.uiState.collectAsState().value
+                val globalUiState = sharedViewModel.uiState.collectAsState().value
 
                 SettingsScreen(
-                    ui = vmState, // if you refactored SettingsScreen to take the PrayerUiState
+                    globalUiState = globalUiState,
+                    settingsUiState = settingsUiState,
+                    onDesiredSleepHoursChange = { settingsViewModel.updateDesiredSleepHours(it) },
+                    onPostFajrBufferMinChange = { settingsViewModel.updatePostFajrBuffer(it) },
+                    onIshaBufferMinChange = { settingsViewModel.updateIshaBuffer(it) },
+                    onMinNightStartChange = { settingsViewModel.updateMinNightStart(it) },
+                    onDisallowPostFajrIfFajrAfterChange = { settingsViewModel.updatePostFajrCutoff(it) },
 
-                    onDesiredSleepHoursChange = { sharedViewModel.updateDesiredSleepHours(it) },
-                    onPostFajrBufferMinChange = { sharedViewModel.updatePostFajrBuffer(it) },
-                    onIshaBufferMinChange = { sharedViewModel.updateIshaBuffer(it) },
-                    onMinNightStartChange = { sharedViewModel.updateMinNightStart(it) },
-                    onDisallowPostFajrIfFajrAfterChange = { sharedViewModel.updatePostFajrCutoff(it) },
-
-                    onUpdateNap = { index, config -> sharedViewModel.updateNap(index, config) },
-                    onAddNap = { sharedViewModel.addNap() },
-                    onRemoveNap = { index -> sharedViewModel.removeNap(index) },
-                    onLatestMorningEndChange = { sharedViewModel.updateLatestMorningEnd(it) },
+                    onUpdateNap = { index, config -> settingsViewModel.updateNap(index, config) },
+                    onAddNap = { settingsViewModel.addNap() },
+                    onRemoveNap = { index -> settingsViewModel.removeNap(index) },
+                    onLatestMorningEndChange = { settingsViewModel.updateLatestMorningEnd(it) },
                     onEnableNapsChange = {
-                        sharedViewModel.enableNaps(it)
+                        settingsViewModel.enableNaps(it)
                     },
                     onEnablePostFajrChange = {
-                        sharedViewModel.enablePostFajr(it)
+                        settingsViewModel.enablePostFajr(it)
                     },
                     onEnableIshaBufferChange = {
-                        sharedViewModel.enableIshaBuffer(it)
+                        settingsViewModel.enableIshaBuffer(it)
                     },
-                    onWorkStartChange = { sharedViewModel.updateWorkStart(it) },
-                    onWorkEndChange = { sharedViewModel.updateWorkEnd(it) },
-                    onCommuteToMinChange = { sharedViewModel.updateCommuteToMin(it) },
+                    onWorkStartChange = { settingsViewModel.updateWorkStart(it) },
+                    onWorkEndChange = { settingsViewModel.updateWorkEnd(it) },
+                    onCommuteToMinChange = { settingsViewModel.updateCommuteToMin(it) },
                     onCommuteFromMinChange = {
-                        sharedViewModel.updateCommuteFromMin(it)
+                        settingsViewModel.updateCommuteFromMin(it)
                     },
+                    onSaveSettings = { settingsViewModel.saveSettings() },
+                    onResetDefaults = { settingsViewModel.resetDefaults() },
                 )
             }
             composableWithTransitions<RootGraph.AlarmList> {
+                val globalUiState = sharedViewModel.uiState.collectAsState().value
                 AlarmListScreenRoot(
+                    globalUiState = globalUiState,
                     navigateToAddEditScreen = {
                         navController.navigate(RootGraph.AlarmDetail(alarmId = it))
                     }

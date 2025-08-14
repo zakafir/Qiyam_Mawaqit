@@ -54,22 +54,18 @@ import com.zakafir.domain.model.QiyamMode
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
-import com.zakafir.presentation.PrayerUiState
+import com.zakafir.presentation.GlobalUiState
 import com.zakafir.presentation.component.StatChip
 import com.zakafir.presentation.component.TonightCard
 import kotlin.run
 import androidx.compose.ui.text.style.TextAlign
 import com.zakafir.presentation.QiyamAlarm
 
-data class NapConfig(
-    val start: String,
-    val durationMin: Int
-)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CustomizableSearchBar(
     modifier: Modifier = Modifier,
-    ui: PrayerUiState,
+    ui: GlobalUiState,
     updateMasjidId: (String) -> Unit,
     selectMasjidSuggestion: (String?) -> Unit,
     onOpenDetailsScreen: (MosqueDetails) -> Unit,
@@ -84,9 +80,9 @@ fun CustomizableSearchBar(
     var requestedActive by rememberSaveable { mutableStateOf(false) }
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
-    var previousText by rememberSaveable { mutableStateOf( ui.selectedMosque?.displayLine ?: ui.masjidId ) }
+    var previousText by rememberSaveable { mutableStateOf( ui.selectedMasjid?.displayLine ?: ui.masjidId ) }
     var textFieldValue by rememberSaveable(stateSaver = TextFieldValue.Saver) {
-        mutableStateOf(TextFieldValue(ui.selectedMosque?.displayLine ?: ui.masjidId))
+        mutableStateOf(TextFieldValue(ui.selectedMasjid?.displayLine ?: ui.masjidId))
     }
 
     LaunchedEffect(ui.searchResults) {
@@ -96,7 +92,7 @@ fun CustomizableSearchBar(
 
     DockedSearchBar(
         modifier = modifier.fillMaxWidth(),
-        query = ui.selectedMosque?.displayLine ?: ui.masjidId,
+        query = ui.selectedMasjid?.displayLine ?: ui.masjidId,
         onQueryChange = {
             textFieldValue = textFieldValue.copy(text = it)
             updateMasjidId.invoke(it)
@@ -187,7 +183,7 @@ fun CustomizableSearchBar(
 
 @Composable
 fun HomeScreen(
-    vmUiState: PrayerUiState,
+    globalUiState: GlobalUiState,
     onMasjidIdChange: (String) -> Unit,
     onAddQiyamAlarm: (QiyamAlarm) -> Unit,
     onSelectMasjidSuggestion: (String?) -> Unit,
@@ -208,17 +204,11 @@ fun HomeScreen(
             val focusRequester = remember { FocusRequester() }
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 CustomizableSearchBar(
-                    ui = vmUiState,
+                    ui = globalUiState,
                     updateMasjidId = onMasjidIdChange,
                     selectMasjidSuggestion = onSelectMasjidSuggestion,
                     onOpenDetailsScreen = onOpenDetailsScreen,
                     modifier = Modifier.focusRequester(focusRequester)
-                )
-                Text(
-                    text = vmUiState.dataSourceLabel ?: "",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(bottom = 4.dp)
                 )
             }
         }
@@ -228,7 +218,7 @@ fun HomeScreen(
                 modifier = Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                vmUiState.yearlyPrayers?.let { prayers ->
+                globalUiState.yearlyPrayers?.let { prayers ->
                     val keyboardController = LocalSoftwareKeyboardController.current
                     keyboardController?.hide()
 
@@ -283,7 +273,7 @@ fun HomeScreen(
                     }
                 } ?: run {
                     when {
-                        vmUiState.isLoading -> Box(
+                        globalUiState.isLoading -> Box(
                             modifier = Modifier.fillMaxSize(),
                             contentAlignment = Alignment.Center
                         ) {
@@ -294,8 +284,8 @@ fun HomeScreen(
                             )
                         }
 
-                        vmUiState.error != null -> Text(
-                            text = vmUiState.error,
+                        globalUiState.error != null -> Text(
+                            text = globalUiState.error,
                             modifier = Modifier.fillMaxSize()
                         )
 
@@ -319,9 +309,10 @@ fun HomeScreen(
         // Section: Qiyam (Tonight) and Helper / Education merged
         item {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                vmUiState.qiyamUiState?.let { qiyamUiState ->
-                    if (vmUiState.selectedMosque != null || vmUiState.yearlyPrayers != null)
+                globalUiState.qiyamUiState?.let { qiyamUiState ->
+                    if (globalUiState.selectedMasjid != null || globalUiState.yearlyPrayers != null)
                     TonightCard(
+                        globalUiState = globalUiState,
                         qiyamUiState = qiyamUiState,
                         onAddQiyamAlarm = onAddQiyamAlarm,
                         onModeChange = onModeChange,

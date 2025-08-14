@@ -29,12 +29,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.zakafir.domain.model.QiyamMode
+import com.zakafir.presentation.GlobalUiState
 import com.zakafir.presentation.QiyamAlarm
 import com.zakafir.presentation.QiyamUiState
 import kotlinx.datetime.LocalDateTime
 
 @Composable
 fun TonightCard(
+    globalUiState: GlobalUiState,
     qiyamUiState: QiyamUiState,
     onAddQiyamAlarm: (QiyamAlarm) -> Unit,
     onModeChange: (QiyamMode) -> Unit,
@@ -83,7 +85,7 @@ fun TonightCard(
                     val qiyamAlarm = QiyamAlarm(
                         hour = qiyamUiState.suggestedWake.hour.toString().padStart(2, '0'),
                         minute = qiyamUiState.suggestedWake.minute.toString().padStart(2, '0'),
-                        alarmName = "Wake up for Qiyam",
+                        alarmName = "Wake up for Qiyam before Fajr Salat in ${globalUiState.selectedMasjid?.displayLine}",
                     )
                     onAddQiyamAlarm.invoke(qiyamAlarm)
                 }
@@ -204,6 +206,7 @@ fun TonightCardPreview() {
         ),
         onLogPrayed = {},
         onAddQiyamAlarm = {},
+        globalUiState = GlobalUiState(),
         onModeChange = {}
     )
 }

@@ -38,10 +38,10 @@ import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.ui.unit.sp
+import com.zakafir.domain.model.MosqueDetails
 
 @Composable
 fun HistoryScreen(
-    weeklyGoal: Int,
     streak: Int,
     history: List<QiyamLog>,
     isRefreshing: Boolean,
@@ -78,7 +78,7 @@ fun HistoryScreen(
                 )
             }
             item {
-                StreakHeader(streak = streak, weeklyGoal = weeklyGoal)
+                StreakHeader(streak = streak, weeklyGoal = 3)
             }
             items(history) { item ->
                 Box(modifier = Modifier
@@ -139,13 +139,12 @@ fun StreakHeader(streak: Int, weeklyGoal: Int) {
 private fun PreviewHistory() {
     HistoryScreen(
         streak = 10,
-        weeklyGoal = 15,
         history = listOf(
             QiyamLog(prayed = true, date = "2020-01-01"),
             QiyamLog(prayed = false, date = "2020-01-02")
         ),
         isRefreshing = false,
         onRefresh = {},
-        onUpdateLog = { _, _ -> }
+        onUpdateLog = { _, _ -> },
     )
 }

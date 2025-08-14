@@ -7,5 +7,6 @@ import org.koin.dsl.lazyModule
 object PresentationModule {
     fun getModule(): Lazy<Module> = lazyModule {
         viewModelOf(::PrayerTimesViewModel)
+        viewModelOf(::SettingsViewModel)
     }
 }

@@ -1,9 +1,11 @@
 package com.zakafir.data
 
+import com.zakafir.data.model.NapConfigDTO
 import com.zakafir.domain.datasource.LocalDataSource
 import com.zakafir.domain.repository.PrayerTimesRepository
 import com.zakafir.domain.datasource.RemoteDataSource
 import com.zakafir.domain.model.MosqueDetails
+import com.zakafir.domain.model.NapConfig
 import com.zakafir.domain.model.PrayerTimes
 import com.zakafir.domain.model.QiyamLog
 import com.zakafir.domain.model.QiyamMode
@@ -118,4 +120,49 @@ class PrayerTimesRepositoryImpl(
     override fun getQiyamHistory(): List<QiyamLog> {
         return localDataSource.getQiyamHistory()
     }
+
+    override fun updatePostFajrBuffer(v: Int) {
+        return localDataSource.updatePostFajrBuffer(v)
+    }
+
+    override fun updateIshaBuffer(v: Int) {
+        localDataSource.updateIshaBuffer(v)
+    }
+
+    override fun updateMinNightStart(v: String) {
+        localDataSource.updateMinNightStart(v)
+    }
+
+    override fun updatePostFajrCutoff(v: String) {
+        localDataSource.updatePostFajrCutoff(v)
+    }
+
+    override fun updateNap(index: Int, config: NapConfig) {
+        localDataSource.updateNap(index, config)
+    }
+
+    override fun addNap() {
+        localDataSource.addNap()
+    }
+
+    override fun updateDesiredSleepHours(v: Float) {
+        localDataSource.updateDesiredSleepHours(v)
+    }
+
+    override fun updateBufferMinutes(v: Int) {
+        localDataSource.updateBufferMinutes(v)
+    }
+
+    override fun updateAllowPostFajr(allow: Boolean) {
+        localDataSource.updateAllowPostFajr(allow)
+    }
+
+    override fun updateLatestMorningEnd(v: String) {
+        localDataSource.updateLatestMorningEnd(v)
+    }
+
+    override fun removeNap(index: Int) {
+        localDataSource.removeNap(index)
+    }
+
 }

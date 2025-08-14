@@ -50,12 +50,14 @@ import com.zakafir.data.core.util.formatHourMinute
 import com.zakafir.data.core.util.formatSeconds
 import com.zakafir.domain.model.Alarm
 import com.zakafir.domain.model.DayValue
+import com.zakafir.presentation.GlobalUiState
 import com.zakafir.presentation.ui.theme.Qiyam_MawaqitTheme
 import com.zakafir.qiyam_mawaqit.R
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun AlarmListScreenRoot(
+    globalUiState: GlobalUiState,
     navigateToAddEditScreen: (alarmId: String?) -> Unit,
     viewModel: AlarmListViewModel = koinViewModel()
 ) {

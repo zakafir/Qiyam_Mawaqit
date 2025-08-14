@@ -11,7 +11,8 @@ data class QiyamUiState(
     val duration: String,
     val mode: QiyamMode,
     val window: QiyamWindow? = null,
+    val weeklyGoal: Int = 3,
     val suggestedWake: LocalDateTime,
     val prayed: Boolean? = null,
-    val qiyamHistory: List<QiyamLog> = emptyList()
+    val qiyamHistory: List<QiyamLog> = emptyList(),
 )
