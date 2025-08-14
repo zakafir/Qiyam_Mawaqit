@@ -12,27 +12,52 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.SearchBar
+import androidx.compose.material3.SearchBarDefaults
+import androidx.compose.material3.DockedSearchBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.semantics.isTraversalGroup
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.traversalIndex
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.unit.dp
 import com.zakafir.domain.model.MosqueDetails
 import com.zakafir.domain.model.PrayerTimes
 import com.zakafir.domain.model.QiyamMode
@@ -40,75 +65,142 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import com.zakafir.presentation.PrayerUiState
-import com.zakafir.presentation.StreakHeader
 import com.zakafir.presentation.component.StatChip
 import com.zakafir.presentation.component.TonightCard
 import kotlin.run
+import androidx.compose.ui.text.style.TextAlign
 
 data class NapConfig(
     val start: String,
     val durationMin: Int
 )
-
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MasjidPicker(
-    ui: PrayerUiState,
+fun CustomizableSearchBar(
     modifier: Modifier = Modifier,
+    ui: PrayerUiState,
     updateMasjidId: (String) -> Unit,
     selectMasjidSuggestion: (String?) -> Unit,
     onOpenDetailsScreen: (MosqueDetails) -> Unit,
-    enabled: Boolean = true
-) {
-
-    val keyboardController = LocalSoftwareKeyboardController.current
-
-    var isFocused by remember { mutableStateOf(false) }
-
-    Box(modifier) {
-        OutlinedTextField(
-            value = ui.selectedMosque?.displayLine ?: ui.masjidId,
-            onValueChange = {
-                isFocused = true
-                updateMasjidId.invoke(it)
-            },
-            label = { Text("Masjid (Mawaqit)") },
-            singleLine = true,
-            enabled = enabled,
-            modifier = Modifier
-                .fillMaxWidth()
-                .onFocusChanged { isFocused = it.isFocused }
+    // Customization options
+    placeholder: @Composable () -> Unit = { Text("Search Masjid using Mawaqit") },
+    leadingIcon: @Composable (() -> Unit)? = {
+        Icon(
+            Icons.Default.Search,
+            contentDescription = "Search"
         )
+    },
+    trailingIcon: @Composable (() -> Unit)? = null,
+    supportingContent: (@Composable (String) -> Unit)? = null,
+    leadingContent: (@Composable () -> Unit)? = null,
+) {
+    // Track expanded (active) state
+    var active by rememberSaveable { mutableStateOf(false) }
+    var requestedActive by rememberSaveable { mutableStateOf(false) }
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
+    var previousText by rememberSaveable { mutableStateOf( ui.selectedMosque?.displayLine ?: ui.masjidId ) }
+    var textFieldValue by rememberSaveable(stateSaver = TextFieldValue.Saver) {
+        mutableStateOf(TextFieldValue(ui.selectedMosque?.displayLine ?: ui.masjidId))
+    }
 
-        val showSuggestions = isFocused && ui.searchResults.isNotEmpty()
-        if (showSuggestions) {
-            ElevatedCard(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 56.dp) // height of the text field
-            ) {
-                Column {
-                    ui.searchResults.forEach { mosqueDetails ->
-                        val title = mosqueDetails.displayLine
-                        val slug = mosqueDetails.slug
-                        Row(
-                            Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    isFocused = false
-                                    keyboardController?.hide()
-                                    selectMasjidSuggestion(slug)
-                                    updateMasjidId(slug)
-                                    onOpenDetailsScreen(mosqueDetails)
-                                }
-                                .padding(horizontal = 12.dp, vertical = 10.dp)
-                        ) {
-                            Column(Modifier.weight(1f)) {
-                                Text(title, style = MaterialTheme.typography.bodyLarge)
-                            }
-                        }
-                        HorizontalDivider()
+    LaunchedEffect(ui.searchResults) {
+        // Expand only if the user requested it and there are results
+        active = requestedActive && ui.searchResults.isNotEmpty()
+    }
+
+    DockedSearchBar(
+        modifier = modifier.fillMaxWidth(),
+        query = ui.selectedMosque?.displayLine ?: ui.masjidId,
+        onQueryChange = {
+            textFieldValue = textFieldValue.copy(text = it)
+            updateMasjidId.invoke(it)
+        },
+        onSearch = { q ->
+            updateMasjidId.invoke(q)
+            active = false
+        },
+        active = active,
+        onActiveChange = { isActive ->
+            requestedActive = isActive
+            if (isActive) {
+                previousText = textFieldValue.text
+                textFieldValue = textFieldValue.copy(
+                    selection = TextRange(textFieldValue.text.length)
+                )
+            }
+            // Only expand when there are results
+            active = requestedActive && ui.searchResults.isNotEmpty()
+        },
+        placeholder = placeholder,
+        leadingIcon = {
+            if (active) {
+                IconButton(onClick = {
+                    // restore previous text
+                    textFieldValue = TextFieldValue(previousText)
+                    updateMasjidId.invoke(previousText)
+                    // collapse & clear focus
+                    active = false
+                    requestedActive = false
+                    focusManager.clearFocus()
+                    keyboardController?.hide()
+                }) {
+                    Icon(
+                        imageVector = Icons.Default.ArrowBack,
+                        contentDescription = "Back"
+                    )
+                }
+            } else {
+                Icon(
+                    imageVector = Icons.Default.Search,
+                    contentDescription = "Search"
+                )
+            }
+        },
+        trailingIcon = {
+            Row {
+                trailingIcon?.invoke()
+                if (textFieldValue.text.isNotEmpty()) {
+                    IconButton(onClick = {
+                        // clear text
+                        textFieldValue = TextFieldValue("")
+                        updateMasjidId.invoke("")
+                        // collapse & clear focus
+                        active = false
+                        requestedActive = false
+                        focusManager.clearFocus()
+                        keyboardController?.hide()
+                    }) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Clear"
+                        )
                     }
                 }
+            }
+        },
+    ) {
+        // Results list constrained to a reasonable height to avoid unbounded constraints
+        LazyColumn(modifier = Modifier.heightIn(max = 400.dp)) {
+            items(ui.searchResults.take(10)) { mosqueDetails ->
+                val slug = mosqueDetails.slug
+                val title = mosqueDetails.displayLine
+                ListItem(
+                    headlineContent = { Text(title) },
+                    supportingContent = supportingContent?.let { { it(title) } },
+                    leadingContent = leadingContent,
+                    colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                    modifier = Modifier
+                        .clickable {
+                            selectMasjidSuggestion(slug)
+                            updateMasjidId(slug)
+                            onOpenDetailsScreen(mosqueDetails)
+                            active = false
+                            requestedActive = false
+                        }
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 4.dp)
+                )
             }
         }
     }
@@ -132,38 +224,17 @@ fun HomeScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Streak
-        item {
-            StreakHeader(streak = vmUiState.streak, weeklyGoal = vmUiState.weeklyGoal)
-        }
         // Section: Mawaqit Masjid ID
         item {
-            var editEnabled by remember { mutableStateOf(false) }
             val focusRequester = remember { FocusRequester() }
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                MasjidPicker(
+                CustomizableSearchBar(
                     ui = vmUiState,
                     updateMasjidId = onMasjidIdChange,
                     selectMasjidSuggestion = onSelectMasjidSuggestion,
                     onOpenDetailsScreen = onOpenDetailsScreen,
-                    enabled = editEnabled,
                     modifier = Modifier.focusRequester(focusRequester)
                 )
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    FilledTonalButton(onClick = {
-                        editEnabled = true
-                        focusRequester.requestFocus()
-                    }) {
-                        Text("Update")
-                    }
-                    OutlinedButton(onClick = {
-                        onMasjidIdChange("")
-                        onSelectMasjidSuggestion(null)
-                        editEnabled = false
-                    }) {
-                        Text("Remove")
-                    }
-                }
                 Text(
                     text = vmUiState.dataSourceLabel ?: "",
                     style = MaterialTheme.typography.bodySmall,
@@ -174,7 +245,10 @@ fun HomeScreen(
         }
         // Section: Today & Tomorrow
         item {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
                 vmUiState.yearlyPrayers?.let { prayers ->
                     val keyboardController = LocalSoftwareKeyboardController.current
                     keyboardController?.hide()
@@ -214,7 +288,7 @@ fun HomeScreen(
                     tomorrow?.let {
                         SectionTitle("Tomorrow's prayers")
                         Text(
-                            text = it.date?.toString() ?: "",
+                            text = it.date ?: "",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(bottom = 4.dp)
@@ -230,17 +304,34 @@ fun HomeScreen(
                     }
                 } ?: run {
                     when {
-                        vmUiState.isLoading -> Text(
-                            text = "Loading...",
-                            modifier = Modifier.fillMaxSize()
-                        )
+                        vmUiState.isLoading -> Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.width(64.dp),
+                                color = MaterialTheme.colorScheme.secondary,
+                                trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                            )
+                        }
 
                         vmUiState.error != null -> Text(
                             text = vmUiState.error,
                             modifier = Modifier.fillMaxSize()
                         )
 
-                        else -> Text(text = "No data", modifier = Modifier.fillMaxSize())
+                        else -> Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "Please select a mosque to view its prayer times and choose the right Qiyam mode.",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(16.dp),
+                                textAlign = TextAlign.Center
+                            )
+                        }
                     }
                 }
             }
@@ -250,6 +341,7 @@ fun HomeScreen(
         item {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 vmUiState.qiyamUiState?.let { qiyamUiState ->
+                    if (vmUiState.selectedMosque != null || vmUiState.yearlyPrayers != null)
                     TonightCard(
                         qiyamUiState = qiyamUiState,
                         onTestAlarmUi = onTestAlarmUi,

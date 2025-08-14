@@ -52,6 +52,7 @@ class PrayerTimesApi {
     suspend fun getYearlyCalendar(
         masjidId: String
     ): YearCalendarDTO {
+        require(masjidId.isNotBlank()) { "masjidId must not be blank" }
         val url = URLBuilder(baseUrl)
             .apply { appendPathSegments(masjidId, "calendar") }
             .buildString()

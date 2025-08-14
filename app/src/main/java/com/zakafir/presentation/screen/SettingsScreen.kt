@@ -53,6 +53,7 @@ todo 3: the sleeping time starts after praying icha,
 todo 4: if the icha time is too early, give the user the possibility to configure the prefered time to go to sleep, so that he could sleep from the configured time till the start of Qiyam
 todo 5: let the user enable and disable settings if needed
  todo 6: also, store all the other settings that are not stored yet (like desired sleep...) store them also using callbacks and create viewModel, repo and localDataSource functions
+ todo 7: a button to reset the Tonight settings, instead of clicking on the Search button
  */
 @Composable
 fun SettingsScreen(

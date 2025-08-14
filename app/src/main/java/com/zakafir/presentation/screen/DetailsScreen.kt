@@ -25,6 +25,8 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.zakafir.domain.model.MosqueDetails
 
+private fun String?.orNullIfBlank(): String? = this?.takeIf { it.isNotBlank() }
+
 @Composable
 fun DetailsScreen(
     mosque: MosqueDetails,
@@ -36,15 +38,17 @@ fun DetailsScreen(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         item {
-            AsyncImage(
-                model = mosque.image,
-                contentDescription = mosque.name,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(200.dp)
-                    .clip(RoundedCornerShape(8.dp)),
-                contentScale = ContentScale.Crop
-            )
+            mosque.image.orNullIfBlank()?.let { img ->
+                AsyncImage(
+                    model = img,
+                    contentDescription = mosque.name,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp)
+                        .clip(RoundedCornerShape(8.dp)),
+                    contentScale = ContentScale.Crop
+                )
+            }
         }
 
         item {
@@ -53,15 +57,26 @@ fun DetailsScreen(
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold
             )
-            Text(mosque.associationName ?: "", style = MaterialTheme.typography.bodyMedium)
-            Text(mosque.localisation ?: "localisation not available", style = MaterialTheme.typography.bodySmall)
+            mosque.associationName.orNullIfBlank()?.let {
+                Text(it, style = MaterialTheme.typography.bodyMedium)
+            }
+            mosque.localisation.orNullIfBlank()?.let {
+                Text(it, style = MaterialTheme.typography.bodySmall)
+            }
         }
 
         item {
-            Text("📞 ${mosque.phone}")
-            Text("✉️ ${mosque.email}")
-            mosque.site?.let { Text("🌐 $it") }
-            mosque.paymentWebsite?.let { Text("💳 Donation: $it") }
+            val phone = mosque.phone.orNullIfBlank()
+            val email = mosque.email.orNullIfBlank()
+            val site = mosque.site.orNullIfBlank()
+            val donation = mosque.paymentWebsite.orNullIfBlank()
+
+            if (phone != null || email != null || site != null || donation != null) {
+                phone?.let { Text("\uD83D\uDCDE $it") }
+                email?.let { Text("✉️ $it") }
+                site?.let { Text("🌐 $it") }
+                donation?.let { Text("💳 Donation: $it") }
+            }
         }
 
         item {
@@ -85,21 +100,26 @@ fun DetailsScreen(
         }
 
         item {
-            Text(
-                "Prayer Times",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
-            )
-            mosque.times.forEachIndexed { index, time ->
-                Text("• $time (Iqama: ${mosque.iqama.getOrNull(index) ?: "-"})")
+            val times = mosque.times.filter { it.isNotBlank() }
+            if (times.isNotEmpty()) {
+                Text(
+                    "Prayer Times",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                times.forEachIndexed { index, time ->
+                    Text("• $time (Iqama: ${mosque.iqama.getOrNull(index)?.takeIf { it.isNotBlank() } ?: "-"})")
+                }
             }
         }
 
         item {
-            Text(
-                "Jumu'a: ${mosque.jumua ?: "-"}",
-                style = MaterialTheme.typography.titleMedium
-            )
+            mosque.jumua.orNullIfBlank()?.let {
+                Text(
+                    "Jumu'a: $it",
+                    style = MaterialTheme.typography.titleMedium
+                )
+            }
         }
         item {
             Row(

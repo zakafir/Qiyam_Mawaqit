@@ -129,6 +129,10 @@ class LocalDataSourceImpl(
         prefs.edit { putString("selected_masjid_id", masjidId) }
     }
 
+    override fun saveLastSelectedMasjidName(masjidId: String) {
+        prefs.edit { putString("selected_masjid_name", masjidId) }
+    }
+
     override fun enableNaps(enabled: Boolean) {
         prefs.edit { putBoolean("enable_naps", enabled) }
     }
@@ -209,7 +213,9 @@ class LocalDataSourceImpl(
     override fun getQiyamHistory(): List<QiyamLog> {
         val historyJson = prefs.getString(QIYAM_HISTORY_KEY, null) ?: return emptyList()
         return runCatching {
-            json.decodeFromString<List<QiyamLogDTO>>(historyJson).map { it.toDomain() }
+            json.decodeFromString<List<QiyamLogDTO>>(historyJson)
+                .map { it.toDomain() }
+                .sortedByDescending { it.date }
         }.getOrNull() ?: emptyList()
     }
 

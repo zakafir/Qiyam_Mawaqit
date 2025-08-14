@@ -7,7 +7,6 @@ import com.zakafir.presentation.screen.WorkingUiState
 
 data class PrayerUiState(
     val masjidId: String = "",
-    val displayedMasjidName: String = "",
     val enableIshaBuffer: Boolean = false,
     val enablePostFajr: Boolean = false,
     val enableNaps: Boolean = false,
@@ -15,6 +14,7 @@ data class PrayerUiState(
     val qiyamUiState: QiyamUiState? = null,
     val workState: WorkingUiState = WorkingUiState(),
     val isLoading: Boolean = false,
+    val isRefreshing: Boolean = false,
     val error: String? = null,
     val streak: Int = 0,
     val weeklyGoal: Int = 3,

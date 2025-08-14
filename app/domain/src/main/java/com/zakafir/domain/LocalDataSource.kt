@@ -45,4 +45,5 @@ interface LocalDataSource {
 
     fun getQiyamHistory(): List<QiyamLog>
 
+    fun saveLastSelectedMasjidName(masjidId: String)
 }

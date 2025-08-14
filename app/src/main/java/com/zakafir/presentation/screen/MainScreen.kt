@@ -2,8 +2,11 @@ package com.zakafir.presentation.screen
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountBox
 import androidx.compose.material.icons.filled.Build
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Phone
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -20,6 +23,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -95,7 +99,14 @@ fun QiyamApp(
                 }
                 vmState.qiyamUiState?.qiyamHistory?.let { history ->
                     HistoryScreen(
-                        history = history
+                        streak = vmState.streak,
+                        weeklyGoal = vmState.weeklyGoal,
+                        isRefreshing = vmState.isRefreshing,
+                        history = history,
+                        onRefresh = { sharedViewModel.onPullToRefresh() },
+                        onUpdateLog = { date, prayed ->
+                            sharedViewModel.updateQiyamLog(date, prayed)
+                        }
                     )
                 }
             }
@@ -141,43 +152,29 @@ private fun BottomNavBar(nav: NavHostController) {
     val navBackStackEntry by nav.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
+    data class Tab(val route: String, val icon: ImageVector, val label: String)
+
+    val tabs = listOf(
+        Tab(Screen.Home.route, Icons.Default.AccountBox, "Tonight"),
+        Tab(Screen.History.route, Icons.Default.DateRange, "History"),
+        Tab(Screen.Settings.route, Icons.Default.Settings, "Settings"),
+    )
+
     NavigationBar {
-        NavigationBarItem(
-            selected = currentRoute == Screen.Home.route,
-            onClick = {
-                nav.navigate(Screen.Home.route) {
-                    popUpTo(nav.graph.findStartDestination().id) { saveState = true }
-                    launchSingleTop = true
-                    restoreState = true
-                }
-            },
-            icon = { Icon(Icons.Default.Phone, null) },
-            label = { Text("Tonight") }
-        )
-        NavigationBarItem(
-            selected = currentRoute == Screen.History.route,
-            onClick = {
-                nav.navigate(Screen.History.route) {
-                    popUpTo(nav.graph.findStartDestination().id) { saveState = true }
-                    launchSingleTop = true
-                    restoreState = true
-                }
-            },
-            icon = { Icon(Icons.Default.Build, null) },
-            label = { Text("History") }
-        )
-        NavigationBarItem(
-            selected = currentRoute == Screen.Settings.route,
-            onClick = {
-                nav.navigate(Screen.Settings.route) {
-                    popUpTo(nav.graph.findStartDestination().id) { saveState = true }
-                    launchSingleTop = true
-                    restoreState = true
-                }
-            },
-            icon = { Icon(Icons.Default.Settings, null) },
-            label = { Text("Settings") }
-        )
+        tabs.forEach { tab ->
+            NavigationBarItem(
+                selected = currentRoute == tab.route,
+                onClick = {
+                    nav.navigate(tab.route) {
+                        popUpTo(nav.graph.findStartDestination().id) { saveState = true }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                },
+                icon = { Icon(tab.icon, null) },
+                label = { Text(tab.label) }
+            )
+        }
     }
 }
 
