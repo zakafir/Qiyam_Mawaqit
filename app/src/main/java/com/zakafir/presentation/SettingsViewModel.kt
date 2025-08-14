@@ -97,26 +97,24 @@ class SettingsViewModel(
     }
 
     fun updateWorkStart(it: String) {
-        _uiState.update { s -> s.copy(workState = s.workState.copy(workStart = it)) }
+        _uiState.update { s -> s.copy(workStart = it) }
         viewModelScope.launch { runCatching { repo.updateWorkStart(it) } }
     }
 
     fun updateWorkEnd(it: String) {
-        _uiState.update { s -> s.copy(workState = s.workState.copy(workEnd = it)) }
+        _uiState.update { s -> s.copy(workEnd = it) }
         viewModelScope.launch { runCatching { repo.updateWorkEnd(it) } }
     }
 
     fun updateCommuteToMin(it: Int) {
-        _uiState.update { s -> s.copy(workState = s.workState.copy(commuteToMin = it.coerceAtLeast(0))) }
+        _uiState.update { s -> s.copy(commuteToMin = it.coerceAtLeast(0)) }
         viewModelScope.launch { runCatching { repo.updateCommuteToMin(it) } }
     }
 
     fun updateCommuteFromMin(it: Int) {
         _uiState.update { s ->
             s.copy(
-                workState = s.workState.copy(
-                    commuteFromMin = it.coerceAtLeast(0)
-                )
+                commuteFromMin = it.coerceAtLeast(0)
             )
         }
         viewModelScope.launch { runCatching { repo.updateCommuteFromMin(it) } }
@@ -152,10 +150,10 @@ class SettingsViewModel(
         repo.updateAllowPostFajr(state.allowPostFajr)
 
         // Work block
-        repo.updateWorkStart(state.workState.workStart)
-        repo.updateWorkEnd(state.workState.workEnd)
-        repo.updateCommuteToMin(state.workState.commuteToMin)
-        repo.updateCommuteFromMin(state.workState.commuteFromMin)
+        repo.updateWorkStart(state.workStart)
+        repo.updateWorkEnd(state.workEnd)
+        repo.updateCommuteToMin(state.commuteToMin)
+        repo.updateCommuteFromMin(state.commuteFromMin)
 
         // Naps: normalize repository to exact list in state
         // Strategy: attempt to clear up to 3 stored naps, then add and set
