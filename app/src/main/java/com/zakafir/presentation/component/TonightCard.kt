@@ -1,7 +1,6 @@
 package com.zakafir.presentation.component
 
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,7 +9,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -31,14 +29,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.zakafir.domain.model.QiyamMode
+import com.zakafir.presentation.QiyamAlarm
 import com.zakafir.presentation.QiyamUiState
-import com.zakafir.presentation.add_edit.AddEditAlarmState
 import kotlinx.datetime.LocalDateTime
 
 @Composable
 fun TonightCard(
     qiyamUiState: QiyamUiState,
-    onAddAlarm: (AddEditAlarmState) -> Unit,
+    onAddQiyamAlarm: (QiyamAlarm) -> Unit,
     onModeChange: (QiyamMode) -> Unit,
     onLogPrayed: (Boolean) -> Unit,
 ) {
@@ -82,7 +80,12 @@ fun TonightCard(
             Spacer(Modifier.height(4.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedButton(onClick = {
-                    onAddAlarm.invoke(hours = qiyamUiState.start, alarmId = null)
+                    val qiyamAlarm = QiyamAlarm(
+                        hour = qiyamUiState.suggestedWake.hour.toString().padStart(2, '0'),
+                        minute = qiyamUiState.suggestedWake.minute.toString().padStart(2, '0'),
+                        alarmName = "Wake up for Qiyam",
+                    )
+                    onAddQiyamAlarm.invoke(qiyamAlarm)
                 }
                 ) { Text("Set alarm to start the Qiyam") }
             }
@@ -117,28 +120,6 @@ fun TonightCard(
             Text("What is the ${qiyamUiState.mode.text} mode?", fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.height(6.dp))
             Text(helperBody, color = Color.Gray)
-        }
-    }
-}
-
-
-@Composable
-fun QiyamModeSelector(
-    modes: List<QiyamMode>,
-    selectedMode: QiyamMode,
-    onSelect: (QiyamMode) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Row(
-        modifier = modifier.horizontalScroll(rememberScrollState()),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        modes.forEach { mode ->
-            ModeChip(
-                text = mode.text,
-                selected = mode == selectedMode,
-                onClick = { onSelect(mode) }
-            )
         }
     }
 }
@@ -222,7 +203,7 @@ fun TonightCardPreview() {
             suggestedWake = LocalDateTime(2023, 1, 1, 0, 0)
         ),
         onLogPrayed = {},
-        onAddAlarm = {},
+        onAddQiyamAlarm = {},
         onModeChange = {}
     )
 }

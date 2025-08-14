@@ -2,6 +2,7 @@ package com.zakafir.presentation.add_edit
 
 import com.zakafir.data.core.domain.ringtone.NameAndUri
 import com.zakafir.domain.model.DayValue
+import com.zakafir.presentation.QiyamAlarm
 
 sealed interface AddEditAlarmAction {
     data object OnCloseClick: AddEditAlarmAction
@@ -9,7 +10,7 @@ sealed interface AddEditAlarmAction {
     data class OnHourTextChange(val value: String): AddEditAlarmAction
     data class OnMinuteTextChange(val value: String): AddEditAlarmAction
     data class OnEditAlarmNameTextChange(val value: String): AddEditAlarmAction
-    data class OnSetAlarmForQiyam(val newState: AddEditAlarmState): AddEditAlarmAction
+    data class OnSetAlarmForQiyam(val qiyamAlarm: QiyamAlarm): AddEditAlarmAction
     data object OnAddEditAlarmNameClick: AddEditAlarmAction
     data object OnCloseEditAlarmNameDialogClick: AddEditAlarmAction
     data class OnDayChipToggle(val value: DayValue): AddEditAlarmAction

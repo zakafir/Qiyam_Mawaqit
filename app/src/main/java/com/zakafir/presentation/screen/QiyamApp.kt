@@ -29,6 +29,7 @@ import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.toRoute
 import com.zakafir.data.core.domain.ringtone.NameAndUri
 import com.zakafir.presentation.PrayerTimesViewModel
+import com.zakafir.presentation.QiyamAlarm
 import com.zakafir.presentation.add_edit.AddEditAlarmAction
 import com.zakafir.presentation.add_edit.AddEditAlarmScreenRoot
 import com.zakafir.presentation.add_edit.AddEditAlarmViewModel
@@ -56,9 +57,16 @@ fun QiyamApp(
                 val vmState = sharedViewModel.uiState.collectAsState().value
                 HomeScreen(
                     vmUiState = vmState,
-                    onAddAlarm = {
-                        navController.navigate(RootGraph.AlarmDetail(it, isNewQiyam = true))
-                                 },
+                    onAddQiyamAlarm = {
+                        navController.navigate(
+                            RootGraph.AlarmDetail(
+                                alarmId = null,
+                                alarmHour = it.hour,
+                                alarmMinute = it.minute,
+                                alarmName = it.alarmName
+                            )
+                        )
+                    },
                     onMasjidIdChange = { sharedViewModel.updateMasjidId(it) },
                     onSelectMasjidSuggestion = { sharedViewModel.selectMasjidSuggestion(it) },
                     onComputeQiyam = { today, tomorrow ->
@@ -142,23 +150,27 @@ fun QiyamApp(
             composableWithTransitions<RootGraph.AlarmList> {
                 AlarmListScreenRoot(
                     navigateToAddEditScreen = {
-                        navController.navigate(RootGraph.AlarmDetail(it))
+                        navController.navigate(RootGraph.AlarmDetail(alarmId = it))
                     }
                 )
             }
 
             composableWithTransitions<RootGraph.AlarmDetail> { entry ->
                 val alarmDetailRoute: RootGraph.AlarmDetail = entry.toRoute()
-                val viewModel: AddEditAlarmViewModel = koinViewModel { parametersOf(alarmDetailRoute.alarmId) }
-                if (alarmDetailRoute.isNewQiyam) {
-                    LaunchedEffect(Unit) {
-                        viewModel.onAction(AddEditAlarmAction.OnSetAlarmForQiyam(
-
-                        ))
-                    }
-                }
+                val viewModel: AddEditAlarmViewModel =
+                    koinViewModel { parametersOf(alarmDetailRoute.alarmId) }
+                viewModel.onAction(
+                    AddEditAlarmAction.OnSetAlarmForQiyam(
+                        QiyamAlarm(
+                            hour = alarmDetailRoute.alarmHour,
+                            minute = alarmDetailRoute.alarmMinute,
+                            alarmName = alarmDetailRoute.alarmName
+                        )
+                    )
+                )
                 LaunchedEffect(Unit) {
-                    val nameAndUri = entry.savedStateHandle.get<NameAndUri>("selectedRingtone") ?: return@LaunchedEffect
+                    val nameAndUri = entry.savedStateHandle.get<NameAndUri>("selectedRingtone")
+                        ?: return@LaunchedEffect
                     viewModel.onAction(AddEditAlarmAction.OnAlarmRingtoneChange(nameAndUri))
                 }
 
@@ -176,11 +188,15 @@ fun QiyamApp(
 
             composableWithTransitions<RootGraph.RingtoneList> { entry ->
                 val ringtoneListRoute: RootGraph.RingtoneList = entry.toRoute()
-                val viewModel: RingtoneListViewModel = koinViewModel { parametersOf(ringtoneListRoute.getNameAndUri()) }
+                val viewModel: RingtoneListViewModel =
+                    koinViewModel { parametersOf(ringtoneListRoute.getNameAndUri()) }
 
                 RingtoneListScreenRoot(
                     onRingtoneSelected = {
-                        navController.previousBackStackEntry?.savedStateHandle?.set("selectedRingtone", it)
+                        navController.previousBackStackEntry?.savedStateHandle?.set(
+                            "selectedRingtone",
+                            it
+                        )
                     },
                     navigateBack = {
                         navController.navigateUp()

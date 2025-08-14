@@ -3,6 +3,7 @@
 package com.zakafir.presentation.list
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -23,6 +24,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FabPosition
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.FloatingActionButtonDefaults
@@ -76,27 +79,7 @@ private fun AlarmListScreen(
     state: AlarmListState,
     onAction: (AlarmListAction) -> Unit
 ) {
-    Scaffold(
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = {
-                    onAction(AlarmListAction.OnAddNewAlarmClick)
-                },
-                containerColor = MaterialTheme.colorScheme.primary,
-                shape = CircleShape,
-                elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 0.dp),
-                modifier = Modifier
-                    .padding(bottom = 24.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.Add,
-                    contentDescription = null,
-                    modifier = Modifier.size(38.dp)
-                )
-            }
-        },
-        floatingActionButtonPosition = FabPosition.Center
-    ) { padding ->
+    Scaffold{ padding ->
         if (state.alarmUi.isEmpty()) {
             EmptyAlarmListContent(
                 modifier = Modifier.fillMaxSize()
@@ -127,7 +110,6 @@ private fun AlarmListScreen(
                         AlarmListItem(
                             alarm = alarm,
                             timeLeftInSeconds = timeLeftInSeconds,
-                            hourToSleep = timeToSleepInSeconds,
                             onAlarmClick = {
                                 onAction(AlarmListAction.OnAlarmClick(alarm.id))
                             },
@@ -136,9 +118,6 @@ private fun AlarmListScreen(
                             },
                             onToggleAlarm = {
                                 onAction(AlarmListAction.OnToggleAlarm(alarm))
-                            },
-                            onToggleDayOfAlarm = {
-                                onAction(AlarmListAction.OnToggleDayOfAlarm(it, alarm))
                             },
                             modifier = Modifier.fillMaxWidth()
                         )
@@ -189,84 +168,98 @@ private fun EmptyAlarmListContent(
 private fun AlarmListItem(
     alarm: Alarm,
     timeLeftInSeconds: Long,
-    hourToSleep: Long?,
     onAlarmClick: () -> Unit,
     onDeleteAlarmClick: () -> Unit,
     onToggleAlarm: () -> Unit,
-    onToggleDayOfAlarm: (DayValue) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Column(
-        modifier = modifier
-            .clip(RoundedCornerShape(10.dp))
-            .background(MaterialTheme.colorScheme.background)
-            .padding(16.dp)
+    Card(
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+        ),
+        shape = RoundedCornerShape(20.dp),
+        modifier = Modifier.fillMaxWidth().border(
+            width = 1.dp,
+            color = MaterialTheme.colorScheme.outline,
+            shape = RoundedCornerShape(20.dp)
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 4.dp
+        )
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+        Column(
+            modifier = modifier
+                .clip(RoundedCornerShape(10.dp))
+                .background(MaterialTheme.colorScheme.background)
+                .padding(16.dp)
         ) {
-            Text(
-                text = alarm.name.ifBlank { "Alarm" },
-                style = MaterialTheme.typography.bodyMedium
-            )
-            Switch(
-                checked = alarm.enabled,
-                onCheckedChange = {
-                    onToggleAlarm()
-                }
-            )
-        }
-        Spacer(modifier = Modifier.height(10.dp))
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-        ) {
-            Text(
-                text = formatHourMinute(alarm.hourTwelve, alarm.minute),
-                style = MaterialTheme.typography.displayLarge,
+            Row(
                 modifier = Modifier
-                    .alignByBaseline()
-                    .clickable(
-                        role = Role.Button
-                    ) {
-                        onAlarmClick()
-                    }
-            )
-            Spacer(modifier = Modifier.width(4.dp))
-            Text(
-                text = if (alarm.isMorning) "AM" else "PM",
-                style = MaterialTheme.typography.titleLarge,
-                modifier = Modifier.alignByBaseline()
-            )
-        }
-        Spacer(modifier = Modifier.height(if (alarm.enabled) 8.dp else 16.dp))
-        if (alarm.enabled) {
-            val remainingTimeStr = formatSeconds(timeLeftInSeconds)
-
-            if (remainingTimeStr.isNotBlank()) {
+                    .fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
                 Text(
-                    text = "Alarm in $remainingTimeStr",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.secondary
+                    text = alarm.name.ifBlank { "Alarm" },
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Switch(
+                    checked = alarm.enabled,
+                    onCheckedChange = {
+                        onToggleAlarm()
+                    }
                 )
             }
+            Spacer(modifier = Modifier.height(10.dp))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+            ) {
+                Text(
+                    text = formatHourMinute(alarm.hourTwelve, alarm.minute),
+                    style = MaterialTheme.typography.displayLarge,
+                    modifier = Modifier
+                        .alignByBaseline()
+                        .clickable(
+                            role = Role.Button
+                        ) {
+                            onAlarmClick()
+                        }
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = if (alarm.isMorning) "AM" else "PM",
+                    style = MaterialTheme.typography.titleLarge,
+                    modifier = Modifier.alignByBaseline()
+                )
+            }
+            Spacer(modifier = Modifier.height(if (alarm.enabled) 8.dp else 16.dp))
+            if (alarm.enabled) {
+                val remainingTimeStr = formatSeconds(timeLeftInSeconds)
+
+                if (remainingTimeStr.isNotBlank()) {
+                    Text(
+                        text = "Alarm in $remainingTimeStr",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.secondary
+                    )
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+            }
             Spacer(modifier = Modifier.height(16.dp))
-        }
-        Spacer(modifier = Modifier.height(16.dp))
-        IconButton(
-            onClick = onDeleteAlarmClick,
-            modifier = Modifier.align(Alignment.End)
-        ) {
-            Icon(
-                imageVector = Icons.Default.Delete,
-                contentDescription = null,
-                tint = Color.Red
-            )
+            IconButton(
+                onClick = onDeleteAlarmClick,
+                modifier = Modifier.align(Alignment.End)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = null,
+                    tint = Color.Red
+                )
+            }
         }
     }
+
 }
 
 @Preview
@@ -279,7 +272,6 @@ private fun AlarmListScreenPreview() {
                     AlarmUi(
                         alarm = it,
                         timeLeftInSeconds = 0,
-                        timeToSleepInSeconds = 0
                     )
                 }
             ),
@@ -308,11 +300,9 @@ private fun AlarmListItemPreview() {
         AlarmListItem(
             alarm = alarm,
             timeLeftInSeconds = 0,
-            hourToSleep = 8,
             onAlarmClick = {},
             onDeleteAlarmClick = {},
             onToggleAlarm = {},
-            onToggleDayOfAlarm = {},
             modifier = Modifier.fillMaxWidth()
         )
     }

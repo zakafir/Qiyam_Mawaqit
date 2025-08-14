@@ -13,6 +13,7 @@ import com.zakafir.domain.usecase.GetTimeToSleepInSecondsUseCase
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
@@ -32,6 +33,9 @@ class AlarmListViewModel(
         alarmRepository
             .getAll()
             .flatMapLatest { alarms ->
+                if (alarms.isEmpty()) {
+                    return@flatMapLatest flowOf(emptyList<AlarmUi>())
+                }
                 val alarmUiFlows = alarms
                     .sortedWith(compareBy<Alarm> { it.hour }.thenBy { it.minute })
                     .map { alarm ->
@@ -43,7 +47,6 @@ class AlarmListViewModel(
                         AlarmUi(
                             alarm = alarm,
                             timeLeftInSeconds = timeLeft,
-                            timeToSleepInSeconds = timeToSleep
                         )
                     }
                 }

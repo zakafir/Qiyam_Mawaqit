@@ -59,6 +59,7 @@ import com.zakafir.presentation.component.StatChip
 import com.zakafir.presentation.component.TonightCard
 import kotlin.run
 import androidx.compose.ui.text.style.TextAlign
+import com.zakafir.presentation.QiyamAlarm
 
 data class NapConfig(
     val start: String,
@@ -74,12 +75,6 @@ fun CustomizableSearchBar(
     onOpenDetailsScreen: (MosqueDetails) -> Unit,
     // Customization options
     placeholder: @Composable () -> Unit = { Text("Search Masjid using Mawaqit") },
-    leadingIcon: @Composable (() -> Unit)? = {
-        Icon(
-            Icons.Default.Search,
-            contentDescription = "Search"
-        )
-    },
     trailingIcon: @Composable (() -> Unit)? = null,
     supportingContent: (@Composable (String) -> Unit)? = null,
     leadingContent: (@Composable () -> Unit)? = null,
@@ -154,12 +149,6 @@ fun CustomizableSearchBar(
                     IconButton(onClick = {
                         // clear text
                         textFieldValue = TextFieldValue("")
-                        updateMasjidId.invoke("")
-                        // collapse & clear focus
-                        active = false
-                        requestedActive = false
-                        focusManager.clearFocus()
-                        keyboardController?.hide()
                     }) {
                         Icon(
                             imageVector = Icons.Default.Close,
@@ -200,7 +189,7 @@ fun CustomizableSearchBar(
 fun HomeScreen(
     vmUiState: PrayerUiState,
     onMasjidIdChange: (String) -> Unit,
-    onAddAlarm: (String?) -> Unit,
+    onAddQiyamAlarm: (QiyamAlarm) -> Unit,
     onSelectMasjidSuggestion: (String?) -> Unit,
     onComputeQiyam: (PrayerTimes?, PrayerTimes?) -> Unit,
     onModeChange: (QiyamMode) -> Unit,
@@ -334,7 +323,7 @@ fun HomeScreen(
                     if (vmUiState.selectedMosque != null || vmUiState.yearlyPrayers != null)
                     TonightCard(
                         qiyamUiState = qiyamUiState,
-                        onAddAlarm = onAddAlarm,
+                        onAddQiyamAlarm = onAddQiyamAlarm,
                         onModeChange = onModeChange,
                         onLogPrayed = onLogPrayed
                     )

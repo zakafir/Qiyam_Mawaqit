@@ -80,13 +80,9 @@ class AddEditAlarmViewModel(
             }
             is AddEditAlarmAction.OnSetAlarmForQiyam -> {
                 state = state.copy(
-                    hour = action.newState.hour,
-                    minute = action.newState.minute,
-                    alarmName = action.newState.alarmName,
-                    repeatDays = action.newState.repeatDays,
-                    ringtone = action.newState.ringtone,
-                    volume = action.newState.volume,
-                    vibrate = action.newState.vibrate
+                    hour = action.qiyamAlarm.hour ?: "",
+                    minute = action.qiyamAlarm.minute ?: "",
+                    alarmName = action.qiyamAlarm.alarmName ?: "",
                 )
             }
             is AddEditAlarmAction.OnHourTextChange -> {
