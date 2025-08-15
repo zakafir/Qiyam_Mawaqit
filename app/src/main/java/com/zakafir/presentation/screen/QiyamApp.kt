@@ -147,8 +147,6 @@ fun QiyamApp(
                     onCommuteFromMinChange = {
                         settingsViewModel.updateCommuteFromMin(it)
                     },
-                    onSaveSettings = { settingsViewModel.saveSettings() },
-                    onResetDefaults = { settingsViewModel.resetDefaults() },
                 )
             }
             composableWithTransitions<RootGraph.AlarmList> {
