@@ -56,7 +56,6 @@ fun SettingsScreen(
     var segFajrDhuhr by remember(tomorrowFajr, tomorrowDhuhr) { mutableStateOf(0f..0f) }
     var segMiddaySmart by remember(tomorrowDhuhr, tomorrowAsr) { mutableStateOf(0f..0f) } // 12:00–14:00 smart nap
     var segAsrMaghrib by remember(tomorrowAsr, tomorrowMaghrib) { mutableStateOf(0f..0f) }
-
     // --- Helpers ---
     fun smartMiddayWindow(): Pair<String?, String?> {
         val baseStart = "12:00"; val baseEnd = "14:00"; val buf = 10
@@ -190,6 +189,10 @@ fun SettingsScreen(
             )
             Spacer(Modifier.height(8.dp))
 
+            DesiredSleepGoalCard(
+                valueHours = settingsUiState.desiredSleepHours,
+                onChange = onDesiredSleepHoursChange
+            )
             SegmentSleepSlider(
                 label = "today ($todayLabel): Maghrib → Icha",
                 start = todayMaghrib,
@@ -266,6 +269,67 @@ fun SettingsScreen(
     }
 }
 
+private fun formatHours(h: Float): String {
+    val totalMin = (h * 60f).toInt()
+    val hh = totalMin / 60
+    val mm = totalMin % 60
+    return if (mm == 0) "${hh}h" else "${hh}h ${mm}m"
+}
+
+@Composable
+private fun SectionCard(
+    title: String,
+    subtitle: String? = null,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    ElevatedCard(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.medium
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text(title, style = MaterialTheme.typography.titleMedium)
+            if (subtitle != null) {
+                Text(
+                    subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            content()
+        }
+    }
+}
+
+@Composable
+private fun DesiredSleepGoalCard(
+    valueHours: Float,
+    onChange: (Float) -> Unit
+) {
+    SectionCard(
+        title = "Sleep goal",
+        subtitle = "Set your target total sleep for the next 24 hours."
+    ) {
+        Text(
+            text = formatHours(valueHours),
+            style = MaterialTheme.typography.titleLarge,
+            color = MaterialTheme.colorScheme.primary
+        )
+        Slider(
+            value = valueHours.coerceIn(3.0f, 12.0f),
+            onValueChange = { onChange((Math.round(it * 4f) / 4f)) }, // snap to 15 min
+            valueRange = 3.0f..12.0f,
+            steps = (12 - 3) * 4 - 1
+        )
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            listOf("3h", "6h", "9h", "12h").forEach {
+                Text(it, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+    }
+}
 @Composable
 private fun SleepPlannerStickyHeader(
     planned: List<SleepBlock>,
