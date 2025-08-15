@@ -123,30 +123,7 @@ fun QiyamApp(
                     globalUiState = globalUiState,
                     settingsUiState = settingsUiState,
                     onDesiredSleepHoursChange = { settingsViewModel.updateDesiredSleepHours(it) },
-                    onPostFajrBufferMinChange = { settingsViewModel.updatePostFajrBuffer(it) },
-                    onIshaBufferMinChange = { settingsViewModel.updateIshaBuffer(it) },
                     onMinNightStartChange = { settingsViewModel.updateMinNightStart(it) },
-                    onDisallowPostFajrIfFajrAfterChange = { settingsViewModel.updatePostFajrCutoff(it) },
-
-                    onUpdateNap = { index, config -> settingsViewModel.updateNap(index, config) },
-                    onAddNap = { settingsViewModel.addNap() },
-                    onRemoveNap = { index -> settingsViewModel.removeNap(index) },
-                    onLatestMorningEndChange = { settingsViewModel.updateLatestMorningEnd(it) },
-                    onEnableNapsChange = {
-                        settingsViewModel.enableNaps(it)
-                    },
-                    onEnablePostFajrChange = {
-                        settingsViewModel.enablePostFajr(it)
-                    },
-                    onEnableIshaBufferChange = {
-                        settingsViewModel.enableIshaBuffer(it)
-                    },
-                    onWorkStartChange = { settingsViewModel.updateWorkStart(it) },
-                    onWorkEndChange = { settingsViewModel.updateWorkEnd(it) },
-                    onCommuteToMinChange = { settingsViewModel.updateCommuteToMin(it) },
-                    onCommuteFromMinChange = {
-                        settingsViewModel.updateCommuteFromMin(it)
-                    },
                 )
             }
             composableWithTransitions<RootGraph.AlarmList> {

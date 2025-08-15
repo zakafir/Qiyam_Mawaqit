@@ -23,6 +23,11 @@ class SettingsViewModel(
         viewModelScope.launch { runCatching { repo.updatePostFajrBuffer(v) } }
     }
 
+    fun updatePostMaghribBuffer(v: Int) {
+        _uiState.update { it.copy(postMaghribBufferMin = v.coerceIn(0, 120)) }
+        viewModelScope.launch { runCatching { repo.updatePostMaghribBuffer(v) } }
+    }
+
     fun updateIshaBuffer(v: Int) {
         _uiState.update { it.copy(ishaBufferMin = v.coerceIn(0, 120)) }
         viewModelScope.launch { runCatching { repo.updateIshaBuffer(v) } }
@@ -91,6 +96,11 @@ class SettingsViewModel(
         viewModelScope.launch { runCatching { repo.enablePostFajr(enabled) } }
     }
 
+    fun enablePostMaghrib(enabled: Boolean) {
+        _uiState.update { s -> s.copy(enablePostMaghrib = enabled) }
+        viewModelScope.launch { runCatching { repo.enablePostMaghrib(enabled) } }
+    }
+
     fun enableIshaBuffer(enabled: Boolean) {
         _uiState.update { s -> s.copy(enableIshaBuffer = enabled) }
         viewModelScope.launch { runCatching { repo.enableIshaBuffer(enabled) } }
@@ -139,10 +149,12 @@ class SettingsViewModel(
         // Simple scalar flags & values
         repo.updatePostFajrBuffer(state.postFajrBufferMin)
         repo.updateIshaBuffer(state.ishaBufferMin)
+        repo.updatePostMaghribBuffer(state.postMaghribBufferMin)
         repo.updateMinNightStart(state.minNightStart)
         repo.updatePostFajrCutoff(state.disallowPostFajrIfFajrAfter)
         repo.enableNaps(state.enableNaps)
         repo.enablePostFajr(state.enablePostFajr)
+        repo.enablePostMaghrib(state.enablePostMaghrib)
         repo.enableIshaBuffer(state.enableIshaBuffer)
         repo.updateLatestMorningEnd(state.latestMorningEnd)
         repo.updateDesiredSleepHours(state.desiredSleepHours)

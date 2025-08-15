@@ -52,5 +52,7 @@ interface PrayerTimesRepository {
     fun updateAllowPostFajr (allow: Boolean)
     fun updateLatestMorningEnd(v: String)
     fun removeNap(index: Int)
+    fun enablePostMaghrib(enablePostMaghrib: Boolean)
+    fun updatePostMaghribBuffer(postMaghribBufferMin: Int)
 
 }

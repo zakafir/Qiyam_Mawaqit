@@ -35,4 +35,6 @@ data class SettingsUiState(
     val minNightStart: String = "22:00",
     val disallowPostFajrIfFajrAfter: String = "07:30",
     val latestMorningEnd: String = "07:30",
+    val enablePostMaghrib: Boolean = false,
+    val postMaghribBufferMin: Int = 10
 )

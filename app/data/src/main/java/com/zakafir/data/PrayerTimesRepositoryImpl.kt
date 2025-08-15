@@ -165,4 +165,12 @@ class PrayerTimesRepositoryImpl(
         localDataSource.removeNap(index)
     }
 
+    override fun enablePostMaghrib(enablePostMaghrib: Boolean) {
+        TODO("Not yet implemented")
+    }
+
+    override fun updatePostMaghribBuffer(postMaghribBufferMin: Int) {
+        TODO("Not yet implemented")
+    }
+
 }
